@@ -543,7 +543,7 @@ spa_volume_node_process_output (SpaNode *node)
   SpaVolumePort *port;
   unsigned int si, di, i, n_samples, n_bytes, soff, doff ;
   SpaBuffer *sbuf, *dbuf;
-  SpaData *sd, *dd;
+  SpaMem *sm, *dm;
   uint16_t *src, *dst;
   double volume;
   SpaPortInput *input;
@@ -576,16 +576,16 @@ spa_volume_node_process_output (SpaNode *node)
   soff = doff = 0;
 
   while (true) {
-    if (si == sbuf->n_datas || di == dbuf->n_datas)
+    if (si == sbuf->n_mems || di == dbuf->n_mems)
       break;
 
-    sd = &sbuf->datas[si];
-    dd = &dbuf->datas[di];
+    sm = &sbuf->mems[si];
+    dm = &sbuf->mems[di];
 
-    src = (uint16_t*) ((uint8_t*)sd->data + sd->offset + soff);
-    dst = (uint16_t*) ((uint8_t*)dd->data + dd->offset + doff);
+    src = (uint16_t*) ((uint8_t*)sm->ptr + sm->chunk->offset + soff);
+    dst = (uint16_t*) ((uint8_t*)dm->ptr + dm->chunk->offset + doff);
 
-    n_bytes = SPA_MIN (sd->size - soff, dd->size - doff);
+    n_bytes = SPA_MIN (sm->chunk->size - soff, dm->chunk->size - doff);
     n_samples = n_bytes / sizeof (uint16_t);
 
     for (i = 0; i < n_samples; i++)
@@ -594,11 +594,11 @@ spa_volume_node_process_output (SpaNode *node)
     soff += n_bytes;
     doff += n_bytes;
 
-    if (soff >= sd->size) {
+    if (soff >= sm->chunk->size) {
       si++;
       soff = 0;
     }
-    if (doff >= dd->size) {
+    if (doff >= dm->chunk->size) {
       di++;
       doff = 0;
     }

@@ -278,7 +278,7 @@ typedef struct {
   SpaDirection direction;
   uint32_t     port_id;
   uint32_t     mem_id;
-  SpaDataType  type;
+  SpaMemType   type;
   int          memfd;
   uint32_t     flags;
   off_t        offset;
@@ -291,13 +291,31 @@ typedef struct {
   size_t      size;
 } PinosMessageMemRef;
 
+typedef struct {
+  SpaMetaType         type;
+  PinosMessageMemRef  meta;
+} PinosMessageBufferMeta;
+
+typedef struct {
+  PinosMessageMemRef  mem;
+  PinosMessageMemRef  chunk;
+} PinosMessageBufferMem;
+
+typedef struct {
+  uint32_t                id;
+  uint32_t                n_metas;
+  PinosMessageBufferMeta *metas;
+  uint32_t                n_mems;
+  PinosMessageBufferMem  *mems;
+} PinosMessageBuffer;
+
 /* PINOS_MESSAGE_USE_BUFFERS */
 typedef struct {
   uint32_t            seq;
   SpaDirection        direction;
   uint32_t            port_id;
   unsigned int        n_buffers;
-  PinosMessageMemRef *buffers;
+  PinosMessageBuffer *buffers;
 } PinosMessageUseBuffers;
 
 PinosConnection *  pinos_connection_new             (int              fd);

@@ -31,8 +31,8 @@ pinos_serialize_buffer_get_size (const SpaBuffer *buffer)
   size = sizeof (SpaBuffer);
   for (i = 0; i < buffer->n_metas; i++)
     size += sizeof (SpaMeta) + buffer->metas[i].size;
-  for (i = 0; i < buffer->n_datas; i++)
-    size += sizeof (SpaData);
+  for (i = 0; i < buffer->n_mems; i++)
+    size += sizeof (SpaMem);
   return size;
 }
 
@@ -41,7 +41,7 @@ pinos_serialize_buffer_serialize (void *dest, const SpaBuffer *buffer)
 {
   SpaBuffer *tb;
   SpaMeta *mp;
-  SpaData *dp;
+  SpaMem *dp;
   void *p;
   unsigned int i;
 
@@ -51,11 +51,11 @@ pinos_serialize_buffer_serialize (void *dest, const SpaBuffer *buffer)
   tb = dest;
   memcpy (tb, buffer, sizeof (SpaBuffer));
   mp = SPA_MEMBER (tb, sizeof(SpaBuffer), SpaMeta);
-  dp = SPA_MEMBER (mp, sizeof(SpaMeta) * tb->n_metas, SpaData);
-  p = SPA_MEMBER (dp, sizeof(SpaData) * tb->n_datas, void);
+  dp = SPA_MEMBER (mp, sizeof(SpaMeta) * tb->n_metas, SpaMem);
+  p = SPA_MEMBER (dp, sizeof(SpaMem) * tb->n_mems, void);
 
   tb->metas = SPA_INT_TO_PTR (SPA_PTRDIFF (mp, tb));
-  tb->datas = SPA_INT_TO_PTR (SPA_PTRDIFF (dp, tb));
+  tb->mems = SPA_INT_TO_PTR (SPA_PTRDIFF (dp, tb));
 
   for (i = 0; i < tb->n_metas; i++) {
     memcpy (&mp[i], &buffer->metas[i], sizeof (SpaMeta));
@@ -63,8 +63,8 @@ pinos_serialize_buffer_serialize (void *dest, const SpaBuffer *buffer)
     mp[i].data = SPA_INT_TO_PTR (SPA_PTRDIFF (p, tb));
     p += mp[i].size;
   }
-  for (i = 0; i < tb->n_datas; i++)
-    memcpy (&dp[i], &buffer->datas[i], sizeof (SpaData));
+  for (i = 0; i < tb->n_mems; i++)
+    memcpy (&dp[i], &buffer->mems[i], sizeof (SpaMem));
 
   return SPA_PTRDIFF (p, tb);
 }
@@ -83,9 +83,13 @@ pinos_serialize_buffer_deserialize (void *src, off_t offset)
     if (m->data)
       m->data = SPA_MEMBER (b, SPA_PTR_TO_INT (m->data), void);
   }
-  if (b->datas)
-    b->datas = SPA_MEMBER (b, SPA_PTR_TO_INT (b->datas), SpaData);
-
+  if (b->mems)
+    b->mems = SPA_MEMBER (b, SPA_PTR_TO_INT (b->mems), SpaMem);
+  for (i = 0; i < b->n_mems; i++) {
+    SpaMem *m = &b->mems[i];
+    if (m->chunk)
+      m->chunk = SPA_MEMBER (b, SPA_PTR_TO_INT (m->chunk), void);
+  }
   return b;
 }
 

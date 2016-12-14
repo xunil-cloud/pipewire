@@ -55,7 +55,7 @@ struct _XvBuffer {
   SpaBuffer buffer;
   SpaMeta meta[1];
   SpaMetaHeader header;
-  SpaData data[1];
+  SpaMem mems[1];
   XvBuffer *next;
   uint32_t index;
   SpaXvSink *sink;

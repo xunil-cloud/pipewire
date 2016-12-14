@@ -48,7 +48,7 @@ struct _FFMpegBuffer {
   SpaBuffer buffer;
   SpaMeta metas[1];
   SpaMetaHeader header;
-  SpaData datas[1];
+  SpaMem mems[1];
   SpaFFMpegEnc *enc;
   SpaBuffer *imported;
   bool outstanding;

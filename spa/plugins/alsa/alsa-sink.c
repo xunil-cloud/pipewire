@@ -544,11 +544,11 @@ spa_alsa_sink_node_port_use_buffers (SpaNode         *node,
     if (b->rb)
       this->ringbuffer = b;
 
-    switch (buffers[i]->datas[0].type) {
-      case SPA_DATA_TYPE_MEMFD:
-      case SPA_DATA_TYPE_DMABUF:
-      case SPA_DATA_TYPE_MEMPTR:
-        if (buffers[i]->datas[0].data == NULL) {
+    switch (buffers[i]->mems[0].type) {
+      case SPA_MEM_TYPE_MEMFD:
+      case SPA_MEM_TYPE_DMABUF:
+      case SPA_MEM_TYPE_MEMPTR:
+        if (buffers[i]->mems[0].ptr == NULL) {
           spa_log_error (this->log, "alsa-source: need mapped memory");
           continue;
         }

@@ -43,24 +43,37 @@ typedef enum {
   SPA_META_TYPE_POINTER,
   SPA_META_TYPE_VIDEO_CROP,
   SPA_META_TYPE_RINGBUFFER,
+  SPA_META_TYPE_SHARED,
 } SpaMetaType;
 
 /**
- * SpaDataType:
- * @SPA_DATA_TYPE_INVALID: invalid data, should be ignored
- * @SPA_DATA_TYPE_MEMPTR: data points to CPU accessible memory
- * @SPA_DATA_TYPE_MEMFD: fd is memfd, data can be mmapped
- * @SPA_DATA_TYPE_DMABUF: fd is dmabuf, data can be mmapped
- * @SPA_DATA_TYPE_ID: data is an id use SPA_PTR_TO_INT32. The definition of
+ * SpaMemType:
+ * @SPA_MEM_TYPE_INVALID: invalid ptr, should be ignored
+ * @SPA_MEM_TYPE_MEMPTR: ptr points to CPU accessible memory
+ * @SPA_MEM_TYPE_MEMFD: fd is memfd, ptr can be mmapped
+ * @SPA_MEM_TYPE_DMABUF: fd is dmabuf, ptr can be mmapped
+ * @SPA_MEM_TYPE_ID: ptr is an id use SPA_PTR_TO_INT32. The definition of
  *          the ID is conveyed in some other way
  */
 typedef enum {
-  SPA_DATA_TYPE_INVALID               = 0,
-  SPA_DATA_TYPE_MEMPTR,
-  SPA_DATA_TYPE_MEMFD,
-  SPA_DATA_TYPE_DMABUF,
-  SPA_DATA_TYPE_ID,
-} SpaDataType;
+  SPA_MEM_TYPE_INVALID               = 0,
+  SPA_MEM_TYPE_MEMPTR,
+  SPA_MEM_TYPE_MEMFD,
+  SPA_MEM_TYPE_DMABUF,
+  SPA_MEM_TYPE_ID,
+} SpaMemType;
+
+/**
+ * SpaMemFlag:
+ * @SPA_MEM_FLAG_NONE: no flags
+ * @SPA_MEM_FLAG_READ: mem is readable
+ * @SPA_MEM_FLAG_WRITE: mem is writable
+ */
+typedef enum {
+  SPA_MEM_FLAG_NONE             = 0,
+  SPA_MEM_FLAG_READ             = (1 << 0),
+  SPA_MEM_FLAG_WRITE            = (1 << 1),
+} SpaMemFlag;
 
 #include <spa/defs.h>
 #include <spa/port.h>
@@ -132,42 +145,78 @@ typedef struct {
 } SpaMeta;
 
 /**
- * SpaData:
- * @type: memory type
- * @flags: memory flags
- * @data: pointer to memory
- * @fd: file descriptor
- * @maxsize: maximum size of the memory
- * @offset: offset in @data
- * @size: valid size of @data
- * @stride: stride of data if applicable
+ * SpaMemArea:
+ * @offset: offset of start of data
+ * @size: size of the data
+ * @stride: stride of data
+ *
+ * The valid data in a data block. Offset and size are clamped
+ * to the maxsize of the data block.
  */
 typedef struct {
-  SpaDataType    type;
-  int            flags;
-  void          *data;
-  int            fd;
-  size_t         maxsize;
   off_t          offset;
   size_t         size;
   ssize_t        stride;
-} SpaData;
+} SpaMemChunk;
+
+/**
+ * SpaMem:
+ * @type: memory type
+ * @flags: memory flags
+ * @fd: file descriptor, can be -1
+ * @offset: offset in @fd
+ * @size: maximum size of the memory
+ * @ptr: pointer to memory, can be NULL
+ * @chunk: valid memory chunk
+ *
+ * A memory block.
+ */
+typedef struct {
+  SpaMemType    type;
+  SpaMemFlag    flags;
+  int           fd;
+  off_t         offset;
+  size_t        size;
+  void         *ptr;
+} SpaMem;
+
+typedef struct {
+  SpaMem        mem;
+  SpaMemChunk  *chunk;
+} SpaMemRef;
 
 /**
  * SpaBuffer:
  * @id: buffer id
  * @n_metas: number of metadata
- * @metas: offset of array of @n_metas metadata
- * @n_datas: number of data pointers
- * @datas: offset of array of @n_datas data pointers
+ * @metas: array of @n_metas metadata
+ * @n_mems: number of memory blocks
+ * @mems: array of @n_mems memory blocks
  */
 struct _SpaBuffer {
   uint32_t       id;
   unsigned int   n_metas;
   SpaMeta       *metas;
-  unsigned int   n_datas;
-  SpaData       *datas;
+  unsigned int   n_mems;
+  SpaMemRef     *mems;
 };
+
+typedef struct {
+  SpaMem   meta_mem;
+  SpaMem   chunk_mem;
+} SpaMetaShared;
+
+#define SPA_BUFFER_MEM_TYPE(b,n)   ((b)->mems[n].mem.type)
+#define SPA_BUFFER_MEM_FLAGS(b,n)  ((b)->mems[n].mem.flags)
+#define SPA_BUFFER_MEM_FD(b,n)     ((b)->mems[n].mem.fd)
+#define SPA_BUFFER_MEM_OFFSET(b,n) ((b)->mems[n].mem.offset)
+#define SPA_BUFFER_MEM_SIZE(b,n)   ((b)->mems[n].mem.size)
+#define SPA_BUFFER_MEM_PTR(b,n)    ((b)->mems[n].mem.ptr)
+
+#define SPA_BUFFER_OFFSET(b,n)     ((b)->mems[n].chunk->offset)
+#define SPA_BUFFER_SIZE(b,n)       ((b)->mems[n].chunk->size)
+#define SPA_BUFFER_STRIDE(b,n)     ((b)->mems[n].chunk->stride)
+#define SPA_BUFFER_DATA(b,n)       (SPA_BUFFER_MEM_PTR (b,n) + SPA_BUFFER_OFFSET (b,n))
 
 static inline void *
 spa_buffer_find_meta (SpaBuffer *b, SpaMetaType type)
@@ -189,6 +238,7 @@ spa_meta_type_get_size (SpaMetaType  type)
     sizeof (SpaMetaPointer),
     sizeof (SpaMetaVideoCrop),
     sizeof (SpaMetaRingbuffer),
+    sizeof (SpaMetaShared),
   };
   if (type <= 0 || type >= SPA_N_ELEMENTS (header_sizes))
     return 0;

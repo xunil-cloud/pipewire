@@ -62,7 +62,7 @@ struct _ProxyBuffer {
   SpaBuffer   *outbuf;
   SpaBuffer    buffer;
   SpaMeta      metas[4];
-  SpaData      datas[4];
+  SpaMem       mems[4];
   off_t        offset;
   size_t       size;
   bool         outstanding;
@@ -638,8 +638,8 @@ spa_proxy_node_port_use_buffers (SpaNode         *node,
 
     b->outbuf = buffers[i];
     memcpy (&b->buffer, buffers[i], sizeof (SpaBuffer));
-    b->buffer.datas = b->datas;
     b->buffer.metas = b->metas;
+    b->buffer.mems = b->mems;
 
     b->size = SPA_ROUND_UP_N (pinos_serialize_buffer_get_size (buffers[i]), 64);
     b->offset = size;
@@ -648,38 +648,37 @@ spa_proxy_node_port_use_buffers (SpaNode         *node,
       memcpy (&b->buffer.metas[j], &buffers[i]->metas[j], sizeof (SpaMeta));
     }
 
-    for (j = 0; j < buffers[i]->n_datas; j++) {
-      SpaData *d = &buffers[i]->datas[j];
+    for (j = 0; j < buffers[i]->n_mems; j++) {
+      SpaMem *m = &buffers[i]->mems[j];
 
-      memcpy (&b->buffer.datas[j], d, sizeof (SpaData));
+      memcpy (&b->buffer.mems[j], m, sizeof (SpaMem));
 
-      switch (d->type) {
-        case SPA_DATA_TYPE_DMABUF:
-        case SPA_DATA_TYPE_MEMFD:
+      switch (m->type) {
+        case SPA_MEM_TYPE_DMABUF:
+        case SPA_MEM_TYPE_MEMFD:
           am.direction = direction;
           am.port_id = port_id;
           am.mem_id = n_mem;
-          am.type = d->type;
-          am.memfd = d->fd;
-          am.flags = d->flags;
-          am.offset = d->offset;
-          am.size = d->maxsize;
+          am.type = m->type;
+          am.memfd = m->fd;
+          am.flags = m->flags;
+          am.offset = m->offset;
+          am.size = m->size;
           pinos_resource_send_message (this->resource,
                                        PINOS_MESSAGE_ADD_MEM,
                                        &am,
                                        false);
-          b->buffer.datas[j].type = SPA_DATA_TYPE_ID;
-          b->buffer.datas[j].data = SPA_UINT32_TO_PTR (n_mem);
+          b->buffer.mems[j].type = SPA_MEM_TYPE_ID;
+          b->buffer.mems[j].ptr = SPA_UINT32_TO_PTR (n_mem);
           n_mem++;
           break;
-        case SPA_DATA_TYPE_MEMPTR:
-          b->buffer.datas[j].data = SPA_INT_TO_PTR (b->size);
-          b->size += d->size;
+        case SPA_MEM_TYPE_MEMPTR:
+          b->buffer.mems[j].ptr = SPA_INT_TO_PTR (b->size);
           break;
         default:
-          b->buffer.datas[j].type = SPA_DATA_TYPE_INVALID;
-          b->buffer.datas[j].data = 0;
-          spa_log_error (this->log, "invalid memory type %d", d->type);
+          b->buffer.mems[j].type = SPA_MEM_TYPE_INVALID;
+          b->buffer.mems[j].ptr = 0;
+          spa_log_error (this->log, "invalid memory type %d", m->type);
           break;
       }
     }
@@ -703,29 +702,32 @@ spa_proxy_node_port_use_buffers (SpaNode         *node,
       ProxyBuffer *b = &port->buffers[i];
       SpaBuffer *sb;
       SpaMeta *sbm;
-      SpaData *sbd;
+      SpaMem *sbmem;
 
       pinos_serialize_buffer_serialize (p, &b->buffer);
 
       sb = p;
-      b->buffer.datas = SPA_MEMBER (sb, SPA_PTR_TO_INT (sb->datas), SpaData);
+      b->buffer.mems = SPA_MEMBER (sb, SPA_PTR_TO_INT (sb->mems), SpaMem);
       sbm = SPA_MEMBER (sb, SPA_PTR_TO_INT (sb->metas), SpaMeta);
-      sbd = SPA_MEMBER (sb, SPA_PTR_TO_INT (sb->datas), SpaData);
+      sbmem = SPA_MEMBER (sb, SPA_PTR_TO_INT (sb->mems), SpaMem);
 
       for (j = 0; j < b->buffer.n_metas; j++)
         b->metas[j].data = SPA_MEMBER (sb, SPA_PTR_TO_INT (sbm[j].data), void);
 
-      for (j = 0; j < b->buffer.n_datas; j++) {
-        if (b->datas[j].type == SPA_DATA_TYPE_MEMPTR)
-          b->datas[j].data = SPA_MEMBER (sb, SPA_PTR_TO_INT (sbd[j].data), void);
+      for (j = 0; j < b->buffer.n_mems; j++) {
+        if (b->mems[j].type == SPA_MEM_TYPE_MEMPTR)
+          b->mems[j].ptr = SPA_MEMBER (sb, SPA_PTR_TO_INT (sbmem[j].ptr), void);
       }
       p += b->size;
+
+      spa_debug_buffer (b->outbuf);
+      spa_debug_buffer (&b->buffer);
     }
 
     am.direction = direction;
     am.port_id = port_id;
     am.mem_id = port->buffer_mem_id;
-    am.type = SPA_DATA_TYPE_MEMFD;
+    am.type = SPA_MEM_TYPE_MEMFD;
     am.memfd = port->buffer_mem.fd;
     am.flags = 0;
     am.offset = 0;
@@ -795,13 +797,15 @@ copy_meta_in (SpaProxy *this, SpaProxyPort *port, uint32_t buffer_id)
   for (i = 0; i < b->outbuf->n_metas; i++) {
     SpaMeta *sm = &b->buffer.metas[i];
     SpaMeta *dm = &b->outbuf->metas[i];
+    spa_log_info (this->log, "%d/%d memcpy meta %p -> %p %zd", i, b->outbuf->n_metas,
+        sm->data, dm->data, dm->size);
     memcpy (dm->data, sm->data, dm->size);
   }
-  for (i = 0; i < b->outbuf->n_datas; i++) {
-    b->outbuf->datas[i].size = b->buffer.datas[i].size;
-    if (b->outbuf->datas[i].type == SPA_DATA_TYPE_MEMPTR) {
-      spa_log_info (this->log, "memcpy in %zd", b->buffer.datas[i].size);
-      memcpy (b->outbuf->datas[i].data, b->datas[i].data, b->buffer.datas[i].size);
+  for (i = 0; i < b->outbuf->n_mems; i++) {
+    SPA_BUFFER_SIZE (b->outbuf, i) = SPA_BUFFER_SIZE (&b->buffer, i);
+    if (SPA_BUFFER_MEM_TYPE (b->outbuf, i) == SPA_MEM_TYPE_MEMPTR) {
+      spa_log_info (this->log, "memcpy in %zd", SPA_BUFFER_SIZE (&b->buffer, i));
+      memcpy (b->outbuf->mems[i].ptr, b->mems[i].ptr, SPA_BUFFER_SIZE (&b->buffer, i));
     }
   }
 }
@@ -817,11 +821,11 @@ copy_meta_out (SpaProxy *this, SpaProxyPort *port, uint32_t buffer_id)
     SpaMeta *dm = &b->buffer.metas[i];
     memcpy (dm->data, sm->data, dm->size);
   }
-  for (i = 0; i < b->outbuf->n_datas; i++) {
-    b->buffer.datas[i].size = b->outbuf->datas[i].size;
-    if (b->datas[i].type == SPA_DATA_TYPE_MEMPTR) {
-      spa_log_info (this->log, "memcpy out %zd", b->outbuf->datas[i].size);
-      memcpy (b->datas[i].data, b->outbuf->datas[i].data, b->outbuf->datas[i].size);
+  for (i = 0; i < b->outbuf->n_mems; i++) {
+    SPA_BUFFER_SIZE (&b->buffer, i) = SPA_BUFFER_SIZE (b->outbuf, i);
+    if (b->mems[i].type == SPA_MEM_TYPE_MEMPTR) {
+      spa_log_info (this->log, "memcpy out %zd", SPA_BUFFER_SIZE (b->outbuf, i));
+      memcpy (b->mems[i].ptr, b->outbuf->mems[i].ptr, SPA_BUFFER_SIZE (b->outbuf, i));
     }
   }
 }

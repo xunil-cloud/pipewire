@@ -275,15 +275,15 @@ pull_frames_queue (SpaALSAState *state,
 
     b = spa_list_first (&state->ready, SpaALSABuffer, list);
 
-    src = SPA_MEMBER (b->outbuf->datas[0].data, b->outbuf->datas[0].offset + state->ready_offset, uint8_t);
+    src = SPA_MEMBER (SPA_BUFFER_DATA (b->outbuf, 0), state->ready_offset, uint8_t);
     dst = SPA_MEMBER (my_areas[0].addr, offset * state->frame_size, uint8_t);
-    n_bytes = SPA_MIN (b->outbuf->datas[0].size - state->ready_offset, frames * state->frame_size);
+    n_bytes = SPA_MIN (SPA_BUFFER_SIZE (b->outbuf, 0) - state->ready_offset, frames * state->frame_size);
     frames = SPA_MIN (frames, n_bytes / state->frame_size);
 
     memcpy (dst, src, n_bytes);
 
     state->ready_offset += n_bytes;
-    if (state->ready_offset >= b->outbuf->datas[0].size) {
+    if (state->ready_offset >= SPA_BUFFER_SIZE (b->outbuf, 0)) {
       SpaNodeEventReuseBuffer rb;
 
       spa_list_remove (&b->list);
@@ -318,7 +318,7 @@ pull_frames_ringbuffer (SpaALSAState *state,
 
   b = state->ringbuffer;
 
-  src = SPA_MEMBER (b->outbuf->datas[0].data, b->outbuf->datas[0].offset, void);
+  src = SPA_BUFFER_DATA (b->outbuf, 0);
   dst = SPA_MEMBER (my_areas[0].addr, offset * state->frame_size, uint8_t);
 
   avail = spa_ringbuffer_get_read_areas (&b->rb->ringbuffer, areas);
@@ -442,8 +442,8 @@ mmap_read (SpaALSAState *state)
     b = spa_list_first (&state->free, SpaALSABuffer, list);
     spa_list_remove (&b->list);
 
-    dest = SPA_MEMBER (b->outbuf->datas[0].data, b->outbuf->datas[0].offset, void);
-    destsize = b->outbuf->datas[0].size;
+    dest = SPA_BUFFER_DATA (b->outbuf, 0);
+    destsize = SPA_BUFFER_SIZE (b->outbuf, 0);
 
     if (b->h) {
       b->h->seq = state->sample_count;
@@ -481,10 +481,12 @@ mmap_read (SpaALSAState *state)
 
   if (b) {
     SpaNodeEventHaveOutput ho;
-    SpaData *d;
+    SpaMemChunk *c;
 
-    d = b->outbuf->datas;
-    d[0].size = avail * state->frame_size;
+    c = b->outbuf->mems[0].chunk;
+    c->offset = 0;
+    c->size = avail * state->frame_size;
+    c->stride = 0;
 
     spa_list_insert (state->ready.prev, &b->list);
 

@@ -177,17 +177,18 @@ spa_debug_buffer (const SpaBuffer *buffer)
         break;
     }
   }
-  fprintf (stderr, " n_datas: \t%u (at %p)\n", buffer->n_datas, buffer->datas);
-  for (i = 0; i < buffer->n_datas; i++) {
-    SpaData *d = &buffer->datas[i];
-    fprintf (stderr, "   type:    %d (%s)\n", d->type, DATA_TYPE_NAME (d->type));
-    fprintf (stderr, "   flags:   %d\n", d->flags);
-    fprintf (stderr, "   data:    %p\n", d->data);
-    fprintf (stderr, "   fd:      %d\n", d->fd);
-    fprintf (stderr, "   maxsize: %zd\n", d->maxsize);
-    fprintf (stderr, "   offset:  %zd\n", d->offset);
-    fprintf (stderr, "   size:    %zd\n", d->size);
-    fprintf (stderr, "   stride:  %zd\n", d->stride);
+  fprintf (stderr, " n_datas: \t%u (at %p)\n", buffer->n_mems, buffer->mems);
+  for (i = 0; i < buffer->n_mems; i++) {
+    SpaMemRef *m = &buffer->mems[i];
+    fprintf (stderr, "   type:      %d (%s)\n", m->mem.type, DATA_TYPE_NAME (m->mem.type));
+    fprintf (stderr, "   flags:     %d\n", m->mem.flags);
+    fprintf (stderr, "   fd:        %d\n", m->mem.fd);
+    fprintf (stderr, "   fd_offset: %zd\n", m->mem.offset);
+    fprintf (stderr, "   fd_size:   %zd\n", m->mem.size);
+    fprintf (stderr, "   ptr:       %p\n", m->mem.ptr);
+    fprintf (stderr, "   offset:    %zd\n", m->chunk->offset);
+    fprintf (stderr, "   size:      %zd\n", m->chunk->size);
+    fprintf (stderr, "   stride:    %zd\n", m->chunk->stride);
   }
   return SPA_RESULT_OK;
 }

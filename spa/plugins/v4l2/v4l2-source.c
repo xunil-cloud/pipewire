@@ -61,7 +61,6 @@ struct _V4l2Buffer {
   bool outstanding;
   bool allocated;
   struct v4l2_buffer v4l2_buffer;
-//  V4l2Buffer *next;
   SpaList list;
 };
 

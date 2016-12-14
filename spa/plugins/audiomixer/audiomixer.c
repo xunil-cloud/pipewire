@@ -42,9 +42,9 @@ typedef struct _MixerBuffer MixerBuffer;
 
 struct _MixerBuffer {
   SpaBuffer buffer;
-  SpaMeta meta[1];
+  SpaMeta metas[1];
   SpaMetaHeader header;
-  SpaData data[1];
+  SpaMem mems[1];
   uint16_t samples[4096];
 };
 
@@ -591,19 +591,19 @@ add_port_data (SpaAudioMixer *this, SpaBuffer *out, SpaAudioMixerPort *port)
   int i, oi = 0;
   uint8_t *op, *ip;
   size_t os, is, chunk;
-  SpaData *odatas = out->datas;
-  SpaData *idatas = port->buffer->datas;
+  SpaMem *omems = out->mems;
+  SpaMem *imems = port->buffer->mems;
 
   op = ip = NULL;
 
   while (true) {
     if (op == NULL) {
-      op = (uint8_t*)odatas[oi].data + odatas[oi].offset;
-      os = odatas[oi].size;
+      op = (uint8_t*)omems[oi].ptr + omems[oi].chunk->offset;
+      os = omems[oi].chunk->size;
     }
     if (ip == NULL) {
-      ip = (uint8_t*)idatas[port->buffer_index].data + idatas[port->buffer_index].offset;
-      is = idatas[port->buffer_index].size;
+      ip = (uint8_t*)imems[port->buffer_index].ptr + imems[port->buffer_index].chunk->offset;
+      is = imems[port->buffer_index].chunk->size;
       ip += port->buffer_offset;
       is -= port->buffer_offset;
     }
@@ -614,7 +614,7 @@ add_port_data (SpaAudioMixer *this, SpaBuffer *out, SpaAudioMixerPort *port)
       op[i] += ip[i];
 
     if ((is -= chunk) == 0) {
-      if (++port->buffer_index == port->buffer->n_datas) {
+      if (++port->buffer_index == port->buffer->n_mems) {
         port->buffer = NULL;
         ((SpaPortInput*)port->io)->flags = SPA_PORT_STATUS_FLAG_NEED_INPUT;
         ((SpaPortOutput*)this->out_ports[0].io)->flags = SPA_PORT_STATUS_FLAG_HAVE_OUTPUT;
@@ -628,7 +628,7 @@ add_port_data (SpaAudioMixer *this, SpaBuffer *out, SpaAudioMixerPort *port)
     port->buffer_queued -= chunk;
 
     if ((os -= chunk) == 0) {
-      if (++oi == out->n_datas)
+      if (++oi == out->n_mems)
         break;
       op = NULL;
     }

@@ -578,11 +578,11 @@ spa_alsa_source_node_port_use_buffers (SpaNode         *node,
 
     b->h = spa_buffer_find_meta (b->outbuf, SPA_META_TYPE_HEADER);
 
-    switch (buffers[i]->datas[0].type) {
-      case SPA_DATA_TYPE_MEMFD:
-      case SPA_DATA_TYPE_DMABUF:
-      case SPA_DATA_TYPE_MEMPTR:
-        if (buffers[i]->datas[0].data == NULL) {
+    switch (SPA_BUFFER_MEM_TYPE (buffers[i], 0)) {
+      case SPA_MEM_TYPE_MEMFD:
+      case SPA_MEM_TYPE_DMABUF:
+      case SPA_MEM_TYPE_MEMPTR:
+        if (buffers[i]->mems[0].ptr == NULL) {
           spa_log_error (this->log, "alsa-source: need mapped memory");
           continue;
         }

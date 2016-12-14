@@ -675,23 +675,23 @@ spa_audiotestsrc_node_port_use_buffers (SpaNode         *node,
 
   for (i = 0; i < n_buffers; i++) {
     ATSBuffer *b;
-    SpaData *d = buffers[i]->datas;
+    SpaMem *m = buffers[i]->mems;
 
     b = &this->buffers[i];
     b->outbuf = buffers[i];
     b->outstanding = true;
     b->h = spa_buffer_find_meta (buffers[i], SPA_META_TYPE_HEADER);
 
-    switch (d[0].type) {
-      case SPA_DATA_TYPE_MEMPTR:
-      case SPA_DATA_TYPE_MEMFD:
-      case SPA_DATA_TYPE_DMABUF:
-        if (d[0].data == NULL) {
+    switch (m[0].type) {
+      case SPA_MEM_TYPE_MEMPTR:
+      case SPA_MEM_TYPE_MEMFD:
+      case SPA_MEM_TYPE_DMABUF:
+        if (m[0].ptr == NULL) {
           spa_log_error (this->log, "audiotestsrc %p: invalid memory on buffer %p", this, buffers[i]);
           continue;
         }
-        b->ptr = SPA_MEMBER (d[0].data, d[0].offset, void);
-        b->size = d[0].size;
+        b->ptr = m[0].ptr;
+        b->size = m[0].size;
         break;
       default:
         break;

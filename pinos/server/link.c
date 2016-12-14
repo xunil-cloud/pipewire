@@ -318,54 +318,69 @@ do_allocation (PinosLink *this, SpaNodeState in_state, SpaNodeState out_state)
       pinos_log_debug ("reusing %d output buffers %p", impl->n_buffers, impl->buffers);
     } else {
       unsigned int i, j;
-      size_t hdr_size, buf_size, arr_size;
-      void *p;
-      unsigned int n_metas, n_datas;
+      size_t hdr_size, buf_size, arr_size, meta_size;
+      void *meta_p, *chunk_p, *data_p;
+      unsigned int n_metas, n_mems;
 
       n_metas = 0;
-      n_datas = 1;
+      n_mems = 1;
 
-      hdr_size = sizeof (SpaBuffer);
-      hdr_size += n_datas * sizeof (SpaData);
+      impl->n_buffers = max_buffers;
+
+      /* buffer size contains, the data + metadata + chunk info. This allocated
+       * in shared memory. */
+      buf_size = minsize * blocks;
+      buf_size += n_mems * sizeof (SpaMemChunk);
+
+      meta_size = 0;
       for (i = 0; i < oinfo->n_params; i++) {
         SpaAllocParam *ap = oinfo->params[i];
 
         if (ap->type == SPA_ALLOC_PARAM_TYPE_META_ENABLE) {
           SpaAllocParamMetaEnable *pme = (SpaAllocParamMetaEnable *) ap;
 
-          hdr_size += spa_meta_type_get_size (pme->type);
+          meta_size += spa_meta_type_get_size (pme->type);
           n_metas++;
         }
       }
-      hdr_size += n_metas * sizeof (SpaMeta);
+      buf_size += meta_size;
+      buf_size = SPA_ROUND_UP_N (buf_size, 64);
 
-      buf_size = SPA_ROUND_UP_N (hdr_size + (minsize * blocks), 64);
-
-      impl->n_buffers = max_buffers;
       pinos_memblock_alloc (PINOS_MEMBLOCK_FLAG_WITH_FD |
                             PINOS_MEMBLOCK_FLAG_MAP_READWRITE |
                             PINOS_MEMBLOCK_FLAG_SEAL,
-                            impl->n_buffers * (sizeof (SpaBuffer*) + buf_size),
+                            buf_size * impl->n_buffers,
                             &impl->buffer_mem);
 
+      meta_p = SPA_MEMBER (impl->buffer_mem.ptr, 0, void);
+      chunk_p = SPA_MEMBER (meta_p, impl->n_buffers * meta_size, void);
+      data_p = SPA_MEMBER (chunk_p, impl->n_buffers * n_mems * sizeof (SpaMemChunk), void);
+
+      /* header conatain the buffer, mem and metadata headers along with
+       * the array of buffers. This is allocated in local memory */
+      hdr_size = sizeof (SpaBuffer);
+      hdr_size += n_metas * sizeof (SpaMeta);
+      hdr_size += n_mems * sizeof (SpaMem);
+
+      impl->buffers = calloc (impl->n_buffers, sizeof (SpaBuffer *) + hdr_size);
+
       arr_size = impl->n_buffers * sizeof (SpaBuffer*);
-      impl->buffers = p = impl->buffer_mem.ptr;
-      p = SPA_MEMBER (p, arr_size, void);
 
       for (i = 0; i < impl->n_buffers; i++) {
         SpaBuffer *b;
-        SpaData *d;
+        SpaMem *m;
         void *pd;
         unsigned int mi;
 
-        b = impl->buffers[i] = SPA_MEMBER (p, buf_size * i, SpaBuffer);
+        b = impl->buffers[i] = SPA_MEMBER (impl->buffers, arr_size + (hdr_size * i), SpaBuffer);
 
         b->id = i;
         b->n_metas = n_metas;
         b->metas = SPA_MEMBER (b, sizeof (SpaBuffer), SpaMeta);
-        b->n_datas = n_datas;
-        b->datas = SPA_MEMBER (b->metas, sizeof (SpaMeta) * n_metas, SpaData);
-        pd = SPA_MEMBER (b->datas, sizeof (SpaData) * n_datas, void);
+        b->n_mems = n_mems;
+        b->mems = SPA_MEMBER (b->metas, sizeof (SpaMeta) * n_metas, SpaMem);
+
+        pd = SPA_MEMBER (meta_p, meta_size * i, void);
 
         for (j = 0, mi = 0; j < oinfo->n_params; j++) {
           SpaAllocParam *ap = oinfo->params[j];
@@ -392,20 +407,22 @@ do_allocation (PinosLink *this, SpaNodeState in_state, SpaNodeState out_state)
           }
         }
 
-        d = &b->datas[0];
+        m = &b->mems[0];
         if (minsize > 0) {
-          d->type = SPA_DATA_TYPE_MEMFD;
-          d->flags = 0;
-          d->data = impl->buffer_mem.ptr;
-          d->fd = impl->buffer_mem.fd;
-          d->maxsize = impl->buffer_mem.size;
-          d->offset = arr_size + hdr_size + (buf_size * i);
-          d->size = minsize;
-          d->stride = stride;
+          m->type = SPA_MEM_TYPE_MEMFD;
+          m->flags = SPA_MEM_FLAG_NONE;
+          m->fd = impl->buffer_mem.fd;
+          m->offset = SPA_PTRDIFF (data_p, impl->buffer_mem.ptr) + (minsize * blocks) * i;
+          m->size = impl->buffer_mem.size;
+          m->ptr = SPA_MEMBER (impl->buffer_mem.ptr, m->offset, void);
+          m->chunk->offset = 0,
+          m->chunk->size = minsize;
+          m->chunk->stride = stride;
         } else {
-          d->type = SPA_DATA_TYPE_INVALID;
-          d->data = NULL;
+          m->type = SPA_MEM_TYPE_INVALID;
+          m->ptr = NULL;
         }
+        spa_debug_buffer (b);
       }
       pinos_log_debug ("allocated %d buffers %p %zd", impl->n_buffers, impl->buffers, minsize);
       impl->allocated = true;

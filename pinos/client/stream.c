@@ -52,7 +52,7 @@ typedef struct {
   bool used;
   void *buf_ptr;
   SpaBuffer *buf;
-  SpaData *datas;
+  SpaMem *mems;
 } BufferId;
 
 typedef struct
@@ -462,8 +462,8 @@ on_rtsocket_condition (SpaSource    *source,
           continue;
 
         if ((bid = find_buffer (stream, input->buffer_id))) {
-          for (i = 0; i < bid->buf->n_datas; i++) {
-            bid->buf->datas[i].size = bid->datas[i].size;
+          for (i = 0; i < bid->buf->n_mems; i++) {
+            SPA_BUFFER_SIZE (bid->buf, i) = SPA_BUFFER_SIZE (bid, i);
           }
           pinos_signal_emit (&stream->new_buffer, stream, bid->id);
         }
@@ -703,17 +703,17 @@ stream_dispatch_func (void             *object,
           m = SPA_MEMBER (b, SPA_PTR_TO_INT (b->metas), SpaMeta);
           for (i = 0; i < b->n_metas; i++)
             size += sizeof (SpaMeta) + m[i].size;
-          for (i = 0; i < b->n_datas; i++)
-            size += sizeof (SpaData);
+          for (i = 0; i < b->n_mems; i++)
+            size += sizeof (SpaMem);
 
           b = bid->buf = malloc (size);
           memcpy (b, bid->buf_ptr, size);
 
           if (b->metas)
             b->metas = SPA_MEMBER (b, SPA_PTR_TO_INT (b->metas), SpaMeta);
-          if (b->datas) {
-            bid->datas = SPA_MEMBER (bid->buf_ptr, SPA_PTR_TO_INT (b->datas), SpaData);
-            b->datas = SPA_MEMBER (b, SPA_PTR_TO_INT (b->datas), SpaData);
+          if (b->mems) {
+            bid->mems = SPA_MEMBER (bid->buf_ptr, SPA_PTR_TO_INT (b->mems), SpaMem);
+            b->mems = SPA_MEMBER (b, SPA_PTR_TO_INT (b->mems), SpaMem);
           }
         }
 
@@ -731,28 +731,28 @@ stream_dispatch_func (void             *object,
             m->data = SPA_MEMBER (bid->buf_ptr, SPA_PTR_TO_INT (m->data), void);
         }
 
-        for (j = 0; j < b->n_datas; j++) {
-          SpaData *d = &b->datas[j];
+        for (j = 0; j < b->n_mems; j++) {
+          SpaMem *m = &b->mems[j];
 
-          switch (d->type) {
-            case SPA_DATA_TYPE_ID:
+          switch (m->type) {
+            case SPA_MEM_TYPE_ID:
             {
-              MemId *bmid = find_mem (stream, SPA_PTR_TO_UINT32 (d->data));
-              d->type = SPA_DATA_TYPE_MEMFD;
-              d->data = NULL;
-              d->fd = bmid->fd;
+              MemId *bmid = find_mem (stream, SPA_PTR_TO_UINT32 (m->ptr));
+              m->type = SPA_MEM_TYPE_MEMFD;
+              m->ptr = NULL;
+              m->fd = bmid->fd;
               pinos_log_debug (" data %d %u -> fd %d", j, bmid->id, bmid->fd);
               break;
             }
-            case SPA_DATA_TYPE_MEMPTR:
+            case SPA_MEM_TYPE_MEMPTR:
             {
-              d->data = SPA_MEMBER (bid->buf_ptr, SPA_PTR_TO_INT (d->data), void);
-              d->fd = -1;
-              pinos_log_debug (" data %d %u -> mem %p", j, bid->id, d->data);
+              m->ptr = SPA_MEMBER (bid->buf_ptr, SPA_PTR_TO_INT (m->ptr), void);
+              m->fd = -1;
+              pinos_log_debug (" data %d %u -> mem %p", j, bid->id, m->ptr);
               break;
             }
             default:
-              pinos_log_warn ("unknown buffer data type %d", d->type);
+              pinos_log_warn ("unknown buffer data type %d", m->type);
               break;
           }
         }
@@ -1096,8 +1096,8 @@ pinos_stream_send_buffer (PinosStream     *stream,
     uint8_t cmd = PINOS_TRANSPORT_CMD_HAVE_DATA;
 
     bid->used = true;
-    for (i = 0; i < bid->buf->n_datas; i++) {
-      bid->datas[i].size = bid->buf->datas[i].size;
+    for (i = 0; i < bid->buf->n_mems; i++) {
+      SPA_BUFFER_SIZE (bid, i) = SPA_BUFFER_SIZE (bid->buf, i);
     }
     impl->trans->outputs[0].buffer_id = id;
     impl->trans->outputs[0].status = SPA_RESULT_OK;
