@@ -388,7 +388,7 @@ on_add_buffer (PinosListener *listener,
 
     switch (m->type) {
       case SPA_META_TYPE_HEADER:
-        data.header = m->data;
+        data.header = m->mem.ptr;
         break;
       default:
         break;
@@ -398,18 +398,18 @@ on_add_buffer (PinosListener *listener,
     SpaData *d = &b->datas[i];
     GstMemory *gmem = NULL;
 
-    switch (d->type) {
-      case SPA_DATA_TYPE_MEMFD:
-      case SPA_DATA_TYPE_DMABUF:
+    switch (SPA_DATA_MEM_TYPE (d)) {
+      case SPA_MEM_TYPE_MEMFD:
+      case SPA_MEM_TYPE_DMABUF:
       {
-        gmem = gst_fd_allocator_alloc (pinossink->allocator, dup (d->fd),
-                  d->maxsize, GST_FD_MEMORY_FLAG_NONE);
-        gst_memory_resize (gmem, d->offset, d->size);
+        gmem = gst_fd_allocator_alloc (pinossink->allocator, dup (SPA_DATA_MEM_FD (d)),
+                  SPA_DATA_MEM_SIZE (d), GST_FD_MEMORY_FLAG_NONE);
+        gst_memory_resize (gmem, SPA_DATA_CHUNK_OFFSET (d), SPA_DATA_CHUNK_SIZE (d));
         break;
       }
-      case SPA_DATA_TYPE_MEMPTR:
-        gmem = gst_memory_new_wrapped (0, d->data, d->maxsize, d->offset,
-                                       d->size, NULL, NULL);
+      case SPA_MEM_TYPE_MEMPTR:
+        gmem = gst_memory_new_wrapped (0, SPA_DATA_MEM_PTR (d), SPA_DATA_MEM_SIZE (d),
+            SPA_DATA_CHUNK_OFFSET (d), SPA_DATA_CHUNK_SIZE (d), NULL, NULL);
         break;
       default:
         break;
@@ -644,8 +644,8 @@ gst_pinos_sink_render (GstBaseSink * bsink, GstBuffer * buffer)
   for (i = 0; i < data->buf->n_datas; i++) {
     SpaData *d = &data->buf->datas[i];
     GstMemory *mem = gst_buffer_peek_memory (buffer, i);
-    d->offset = mem->offset;
-    d->size = mem->size;
+    d->chunk.chunk->offset = mem->offset;
+    d->chunk.chunk->size = mem->size;
   }
   gst_buffer_ref (buffer);
 

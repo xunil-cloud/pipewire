@@ -582,10 +582,10 @@ spa_volume_node_process_output (SpaNode *node)
     sd = &sbuf->datas[si];
     dd = &dbuf->datas[di];
 
-    src = (uint16_t*) ((uint8_t*)sd->data + sd->offset + soff);
-    dst = (uint16_t*) ((uint8_t*)dd->data + dd->offset + doff);
+    src = (uint16_t*) ((uint8_t*)SPA_DATA_CHUNK_PTR (sd) + soff);
+    dst = (uint16_t*) ((uint8_t*)SPA_DATA_CHUNK_PTR (dd) + doff);
 
-    n_bytes = SPA_MIN (sd->size - soff, dd->size - doff);
+    n_bytes = SPA_MIN (SPA_DATA_CHUNK_SIZE (sd) - soff, SPA_DATA_CHUNK_SIZE (dd) - doff);
     n_samples = n_bytes / sizeof (uint16_t);
 
     for (i = 0; i < n_samples; i++)
@@ -594,11 +594,11 @@ spa_volume_node_process_output (SpaNode *node)
     soff += n_bytes;
     doff += n_bytes;
 
-    if (soff >= sd->size) {
+    if (soff >= SPA_DATA_CHUNK_SIZE (sd)) {
       si++;
       soff = 0;
     }
-    if (doff >= dd->size) {
+    if (doff >= SPA_DATA_CHUNK_SIZE (dd)) {
       di++;
       doff = 0;
     }

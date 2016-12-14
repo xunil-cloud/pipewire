@@ -463,7 +463,7 @@ on_rtsocket_condition (SpaSource    *source,
 
         if ((bid = find_buffer (stream, input->buffer_id))) {
           for (i = 0; i < bid->buf->n_datas; i++) {
-            bid->buf->datas[i].size = bid->datas[i].size;
+            bid->buf->datas[i].mem.size = bid->datas[i].mem.size;
           }
           pinos_signal_emit (&stream->new_buffer, stream, bid->id);
         }
@@ -702,7 +702,7 @@ stream_dispatch_func (void             *object,
           size = sizeof (SpaBuffer);
           m = SPA_MEMBER (b, SPA_PTR_TO_INT (b->metas), SpaMeta);
           for (i = 0; i < b->n_metas; i++)
-            size += sizeof (SpaMeta) + m[i].size;
+            size += sizeof (SpaMeta) + m[i].mem.size;
           for (i = 0; i < b->n_datas; i++)
             size += sizeof (SpaData);
 
@@ -727,32 +727,32 @@ stream_dispatch_func (void             *object,
 
         for (j = 0; j < b->n_metas; j++) {
           SpaMeta *m = &b->metas[j];
-          if (m->data)
-            m->data = SPA_MEMBER (bid->buf_ptr, SPA_PTR_TO_INT (m->data), void);
+          if (m->mem.ptr)
+            m->mem.ptr = SPA_MEMBER (bid->buf_ptr, SPA_PTR_TO_INT (m->mem.ptr), void);
         }
 
         for (j = 0; j < b->n_datas; j++) {
           SpaData *d = &b->datas[j];
 
-          switch (d->type) {
-            case SPA_DATA_TYPE_ID:
+          switch (SPA_DATA_MEM_TYPE (d)) {
+            case SPA_MEM_TYPE_ID:
             {
-              MemId *bmid = find_mem (stream, SPA_PTR_TO_UINT32 (d->data));
-              d->type = SPA_DATA_TYPE_MEMFD;
-              d->data = NULL;
-              d->fd = bmid->fd;
+              MemId *bmid = find_mem (stream, SPA_PTR_TO_UINT32 (d->mem.mem->ptr));
+              SPA_DATA_MEM_TYPE (d) = SPA_MEM_TYPE_MEMFD;
+              SPA_DATA_MEM_PTR (d) = NULL;
+              SPA_DATA_MEM_FD (d) = bmid->fd;
               pinos_log_debug (" data %d %u -> fd %d", j, bmid->id, bmid->fd);
               break;
             }
-            case SPA_DATA_TYPE_MEMPTR:
+            case SPA_MEM_TYPE_MEMPTR:
             {
-              d->data = SPA_MEMBER (bid->buf_ptr, SPA_PTR_TO_INT (d->data), void);
-              d->fd = -1;
-              pinos_log_debug (" data %d %u -> mem %p", j, bid->id, d->data);
+              SPA_DATA_MEM_PTR (d) = SPA_MEMBER (bid->buf_ptr, SPA_PTR_TO_INT (d->mem.mem->ptr), void);
+              SPA_DATA_MEM_FD (d) = -1;
+              pinos_log_debug (" data %d %u -> mem %p", j, bid->id, SPA_DATA_MEM_PTR (d));
               break;
             }
             default:
-              pinos_log_warn ("unknown buffer data type %d", d->type);
+              pinos_log_warn ("unknown buffer data type %d", SPA_DATA_MEM_TYPE (d));
               break;
           }
         }
@@ -1097,7 +1097,7 @@ pinos_stream_send_buffer (PinosStream     *stream,
 
     bid->used = true;
     for (i = 0; i < bid->buf->n_datas; i++) {
-      bid->datas[i].size = bid->buf->datas[i].size;
+      SPA_DATA_CHUNK_SIZE (&bid->datas[i]) = SPA_DATA_CHUNK_SIZE (&bid->buf->datas[i]);
     }
     impl->trans->outputs[0].buffer_id = id;
     impl->trans->outputs[0].status = SPA_RESULT_OK;

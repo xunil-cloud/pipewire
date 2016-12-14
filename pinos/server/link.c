@@ -321,6 +321,7 @@ do_allocation (PinosLink *this, SpaNodeState in_state, SpaNodeState out_state)
       size_t hdr_size, buf_size, arr_size;
       void *p;
       unsigned int n_metas, n_datas;
+      SpaMem mem;
 
       n_metas = 0;
       n_datas = 1;
@@ -352,6 +353,13 @@ do_allocation (PinosLink *this, SpaNodeState in_state, SpaNodeState out_state)
       impl->buffers = p = impl->buffer_mem.ptr;
       p = SPA_MEMBER (p, arr_size, void);
 
+      mem.type = SPA_MEM_TYPE_MEMFD;
+      mem.flags = 0;
+      mem.fd = impl->buffer_mem.fd;
+      mem.offset = 0;
+      mem.size = impl->buffer_mem.size;
+      mem.ptr = impl->buffer_mem.ptr;
+
       for (i = 0; i < impl->n_buffers; i++) {
         SpaBuffer *b;
         SpaData *d;
@@ -373,9 +381,10 @@ do_allocation (PinosLink *this, SpaNodeState in_state, SpaNodeState out_state)
           if (ap->type == SPA_ALLOC_PARAM_TYPE_META_ENABLE) {
             SpaAllocParamMetaEnable *pme = (SpaAllocParamMetaEnable *) ap;
 
-            b->metas[mi].type = pme->type;
-            b->metas[mi].data = pd;
-            b->metas[mi].size = spa_meta_type_get_size (pme->type);
+            SPA_META_MEMREF_MEM (&b->metas[mi]) = &mem;
+            SPA_META_TYPE (&b->metas[mi]) = pme->type;
+            SPA_META_PTR (&b->metas[mi]) = pd;
+            SPA_META_SIZE (&b->metas[mi]) = spa_meta_type_get_size (pme->type);
 
             switch (pme->type) {
               case SPA_META_TYPE_RINGBUFFER:
@@ -387,24 +396,25 @@ do_allocation (PinosLink *this, SpaNodeState in_state, SpaNodeState out_state)
               default:
                 break;
             }
-            pd = SPA_MEMBER (pd, b->metas[mi].size, void);
+            pd = SPA_MEMBER (pd, SPA_META_SIZE (&b->metas[mi]), void);
             mi++;
           }
         }
 
         d = &b->datas[0];
         if (minsize > 0) {
-          d->type = SPA_DATA_TYPE_MEMFD;
-          d->flags = 0;
-          d->data = impl->buffer_mem.ptr;
-          d->fd = impl->buffer_mem.fd;
-          d->maxsize = impl->buffer_mem.size;
-          d->offset = arr_size + hdr_size + (buf_size * i);
-          d->size = minsize;
-          d->stride = stride;
+          SPA_DATA_MEMREF_MEM (d) = &mem;
+          SPA_DATA_MEMREF_OFFSET (d) = arr_size + hdr_size + (buf_size * i);
+          SPA_DATA_MEMREF_SIZE (d) = minsize;
+          SPA_DATA_MEMREF_PTR (d) = SPA_MEMBER (SPA_DATA_MEM_PTR (d), SPA_DATA_MEMREF_OFFSET (d), void);
+
+          SPA_DATA_CHUNK_OFFSET (d) = 0;
+          SPA_DATA_CHUNK_SIZE (d) = minsize;
+          SPA_DATA_CHUNK_STRIDE (d) = stride;
         } else {
-          d->type = SPA_DATA_TYPE_INVALID;
-          d->data = NULL;
+          SPA_DATA_MEMREF_MEM (d) = &mem;
+          SPA_DATA_MEM_TYPE (d) = SPA_MEM_TYPE_INVALID;
+          SPA_DATA_MEM_PTR (d) = NULL;
         }
       }
       pinos_log_debug ("allocated %d buffers %p %zd", impl->n_buffers, impl->buffers, minsize);

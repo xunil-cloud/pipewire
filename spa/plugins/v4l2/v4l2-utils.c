@@ -108,19 +108,19 @@ spa_v4l2_clear_buffers (SpaV4l2Source *this)
     return SPA_RESULT_OK;
 
   for (i = 0; i < state->n_buffers; i++) {
-    V4l2Buffer *b;
+    V4l2Buffer *b = &state->buffers[i];
+    SpaData *d = &b->outbuf->datas[0];
 
-    b = &state->buffers[i];
     if (b->outstanding) {
       spa_log_info (state->log, "v4l2: queueing outstanding buffer %p", b);
       spa_v4l2_buffer_recycle (this, i);
     }
     if (b->allocated) {
-      if (b->outbuf->datas[0].data)
-        munmap (b->outbuf->datas[0].data, b->outbuf->datas[0].maxsize);
-      if (b->outbuf->datas[0].fd != -1)
-        close (b->outbuf->datas[0].fd);
-      b->outbuf->datas[0].type = SPA_DATA_TYPE_INVALID;
+      if (SPA_DATA_MEM_PTR (d))
+        munmap (SPA_DATA_MEM_PTR (d), SPA_DATA_MEM_SIZE (d));
+      if (SPA_DATA_MEM_FD (d) != -1)
+        close (SPA_DATA_MEM_FD (d));
+      SPA_DATA_MEM_TYPE (d) = SPA_MEM_TYPE_INVALID;
     }
   }
 
@@ -876,7 +876,8 @@ mmap_read (SpaV4l2Source *this)
   }
 
   d = b->outbuf->datas;
-  d[0].size = buf.bytesused;
+  SPA_DATA_CHUNK_OFFSET (&d[0]) = 0;
+  SPA_DATA_CHUNK_SIZE (&d[0]) = buf.bytesused;
 
   spa_list_insert (state->ready.prev, &b->list);
 
@@ -913,12 +914,12 @@ spa_v4l2_use_buffers (SpaV4l2Source *this, SpaBuffer **buffers, uint32_t n_buffe
   SpaData *d;
 
   if (n_buffers > 0) {
-    switch (buffers[0]->datas[0].type) {
-      case SPA_DATA_TYPE_MEMPTR:
-      case SPA_DATA_TYPE_MEMFD:
+    switch (SPA_DATA_MEM_TYPE (&buffers[0]->datas[0])) {
+      case SPA_MEM_TYPE_MEMPTR:
+      case SPA_MEM_TYPE_MEMFD:
         state->memtype = V4L2_MEMORY_USERPTR;
         break;
-      case SPA_DATA_TYPE_DMABUF:
+      case SPA_MEM_TYPE_DMABUF:
         state->memtype = V4L2_MEMORY_DMABUF;
         break;
       default:
@@ -963,18 +964,18 @@ spa_v4l2_use_buffers (SpaV4l2Source *this, SpaBuffer **buffers, uint32_t n_buffe
     b->v4l2_buffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     b->v4l2_buffer.memory = state->memtype;
     b->v4l2_buffer.index = i;
-    switch (d[0].type) {
-      case SPA_DATA_TYPE_MEMPTR:
-      case SPA_DATA_TYPE_MEMFD:
-        if (d[0].data == NULL) {
+    switch (SPA_DATA_MEM_TYPE (&d[0])) {
+      case SPA_MEM_TYPE_MEMPTR:
+      case SPA_MEM_TYPE_MEMFD:
+        if (SPA_DATA_MEM_PTR (&d[0]) == NULL) {
           spa_log_error (state->log, "v4l2: need mmaped memory");
           continue;
         }
-        b->v4l2_buffer.m.userptr = (unsigned long) SPA_MEMBER (d[0].data, d[0].offset, void *);
-        b->v4l2_buffer.length = d[0].size;
+        b->v4l2_buffer.m.userptr = (unsigned long) SPA_DATA_CHUNK_PTR (&d[0]);
+        b->v4l2_buffer.length = SPA_DATA_CHUNK_SIZE (&d[0]);
         break;
-      case SPA_DATA_TYPE_DMABUF:
-        b->v4l2_buffer.m.fd = d[0].fd;
+      case SPA_MEM_TYPE_DMABUF:
+        b->v4l2_buffer.m.fd = SPA_DATA_MEM_FD (&d[0]);
         break;
       default:
         break;
@@ -1045,10 +1046,10 @@ mmap_init (SpaV4l2Source   *this,
     }
 
     d = buffers[i]->datas;
-    d[0].offset = 0;
-    d[0].size = b->v4l2_buffer.length;
-    d[0].maxsize = b->v4l2_buffer.length;
-    d[0].stride = state->fmt.fmt.pix.bytesperline;
+    SPA_DATA_MEM_SIZE (&d[0]) = b->v4l2_buffer.length;
+    SPA_DATA_CHUNK_OFFSET (&d[0]) = 0;
+    SPA_DATA_CHUNK_SIZE (&d[0]) = b->v4l2_buffer.length;
+    SPA_DATA_CHUNK_STRIDE (&d[0]) = state->fmt.fmt.pix.bytesperline;
 
     if (state->export_buf) {
       struct v4l2_exportbuffer expbuf;
@@ -1061,19 +1062,19 @@ mmap_init (SpaV4l2Source   *this,
         perror("VIDIOC_EXPBUF");
         continue;
       }
-      d[0].type = SPA_DATA_TYPE_DMABUF;
-      d[0].fd = expbuf.fd;
-      d[0].data = NULL;
+      SPA_DATA_MEM_TYPE (&d[0]) = SPA_MEM_TYPE_DMABUF;
+      SPA_DATA_MEM_FD (&d[0]) = expbuf.fd;
+      SPA_DATA_MEM_PTR (&d[0]) = NULL;
     } else {
-      d[0].type = SPA_DATA_TYPE_MEMPTR;
-      d[0].fd = -1;
-      d[0].data = mmap (NULL,
-                        b->v4l2_buffer.length,
-                        PROT_READ,
-                        MAP_SHARED,
-                        state->fd,
-                        b->v4l2_buffer.m.offset);
-      if (d[0].data == MAP_FAILED) {
+      SPA_DATA_MEM_TYPE (&d[0]) = SPA_MEM_TYPE_MEMPTR;
+      SPA_DATA_MEM_FD (&d[0]) = -1;
+      SPA_DATA_MEM_PTR (&d[0]) = mmap (NULL,
+                                 b->v4l2_buffer.length,
+                                 PROT_READ,
+                                 MAP_SHARED,
+                                 state->fd,
+                                 b->v4l2_buffer.m.offset);
+      if (SPA_DATA_MEM_PTR (&d[0]) == MAP_FAILED) {
         perror ("mmap");
         continue;
       }

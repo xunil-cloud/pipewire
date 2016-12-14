@@ -272,18 +272,20 @@ pull_frames_queue (SpaALSAState *state,
     uint8_t *src, *dst;
     size_t n_bytes;
     SpaALSABuffer *b;
+    SpaData *d;
 
     b = spa_list_first (&state->ready, SpaALSABuffer, list);
+    d = &b->outbuf->datas[0];
 
-    src = SPA_MEMBER (b->outbuf->datas[0].data, b->outbuf->datas[0].offset + state->ready_offset, uint8_t);
+    src = SPA_MEMBER (SPA_DATA_CHUNK_PTR (d), state->ready_offset, uint8_t);
     dst = SPA_MEMBER (my_areas[0].addr, offset * state->frame_size, uint8_t);
-    n_bytes = SPA_MIN (b->outbuf->datas[0].size - state->ready_offset, frames * state->frame_size);
+    n_bytes = SPA_MIN (SPA_DATA_CHUNK_SIZE (d) - state->ready_offset, frames * state->frame_size);
     frames = SPA_MIN (frames, n_bytes / state->frame_size);
 
     memcpy (dst, src, n_bytes);
 
     state->ready_offset += n_bytes;
-    if (state->ready_offset >= b->outbuf->datas[0].size) {
+    if (state->ready_offset >= SPA_DATA_CHUNK_SIZE (d)) {
       SpaNodeEventReuseBuffer rb;
 
       spa_list_remove (&b->list);
@@ -315,10 +317,12 @@ pull_frames_ringbuffer (SpaALSAState *state,
   SpaALSABuffer *b;
   uint8_t *src, *dst;
   SpaNodeEventReuseBuffer rb;
+  SpaData *d;
 
   b = state->ringbuffer;
+  d = &b->outbuf->datas[0];
 
-  src = SPA_MEMBER (b->outbuf->datas[0].data, b->outbuf->datas[0].offset, void);
+  src = SPA_DATA_CHUNK_PTR (d);
   dst = SPA_MEMBER (my_areas[0].addr, offset * state->frame_size, uint8_t);
 
   avail = spa_ringbuffer_get_read_areas (&b->rb->ringbuffer, areas);
@@ -420,6 +424,7 @@ mmap_read (SpaALSAState *state)
   int64_t now;
   uint8_t *dest = NULL;
   size_t destsize;
+  SpaData *d;
 
   snd_pcm_status_alloca(&status);
 
@@ -442,8 +447,10 @@ mmap_read (SpaALSAState *state)
     b = spa_list_first (&state->free, SpaALSABuffer, list);
     spa_list_remove (&b->list);
 
-    dest = SPA_MEMBER (b->outbuf->datas[0].data, b->outbuf->datas[0].offset, void);
-    destsize = b->outbuf->datas[0].size;
+    d = &b->outbuf->datas[0];
+
+    dest = SPA_DATA_CHUNK_PTR (d);
+    destsize = SPA_DATA_CHUNK_SIZE (d);
 
     if (b->h) {
       b->h->seq = state->sample_count;
@@ -484,7 +491,7 @@ mmap_read (SpaALSAState *state)
     SpaData *d;
 
     d = b->outbuf->datas;
-    d[0].size = avail * state->frame_size;
+    SPA_DATA_CHUNK_SIZE (&d[0]) = avail * state->frame_size;
 
     spa_list_insert (state->ready.prev, &b->list);
 

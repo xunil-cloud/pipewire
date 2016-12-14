@@ -30,7 +30,7 @@ pinos_serialize_buffer_get_size (const SpaBuffer *buffer)
 
   size = sizeof (SpaBuffer);
   for (i = 0; i < buffer->n_metas; i++)
-    size += sizeof (SpaMeta) + buffer->metas[i].size;
+    size += sizeof (SpaMeta) + SPA_META_SIZE (&buffer->metas[i]);
   for (i = 0; i < buffer->n_datas; i++)
     size += sizeof (SpaData);
   return size;
@@ -59,9 +59,9 @@ pinos_serialize_buffer_serialize (void *dest, const SpaBuffer *buffer)
 
   for (i = 0; i < tb->n_metas; i++) {
     memcpy (&mp[i], &buffer->metas[i], sizeof (SpaMeta));
-    memcpy (p, mp[i].data, mp[i].size);
-    mp[i].data = SPA_INT_TO_PTR (SPA_PTRDIFF (p, tb));
-    p += mp[i].size;
+    memcpy (p, SPA_META_PTR (&mp[i]), SPA_META_SIZE (&mp[i]));
+    SPA_META_PTR (&mp[i]) = SPA_INT_TO_PTR (SPA_PTRDIFF (p, tb));
+    p += SPA_META_SIZE (&mp[i]);
   }
   for (i = 0; i < tb->n_datas; i++)
     memcpy (&dp[i], &buffer->datas[i], sizeof (SpaData));
@@ -80,8 +80,8 @@ pinos_serialize_buffer_deserialize (void *src, off_t offset)
     b->metas = SPA_MEMBER (b, SPA_PTR_TO_INT (b->metas), SpaMeta);
   for (i = 0; i < b->n_metas; i++) {
     SpaMeta *m = &b->metas[i];
-    if (m->data)
-      m->data = SPA_MEMBER (b, SPA_PTR_TO_INT (m->data), void);
+    if (SPA_META_PTR (m))
+      SPA_META_PTR (m) = SPA_MEMBER (b, SPA_PTR_TO_INT (SPA_META_PTR (m)), void);
   }
   if (b->datas)
     b->datas = SPA_MEMBER (b, SPA_PTR_TO_INT (b->datas), SpaData);

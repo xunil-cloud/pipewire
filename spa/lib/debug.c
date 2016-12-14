@@ -34,9 +34,9 @@ struct meta_type_name {
 };
 #define META_TYPE_NAME(t)  meta_type_names[SPA_CLAMP(t,0,SPA_N_ELEMENTS(meta_type_names)-1)].name
 
-struct data_type_name {
+struct mem_type_name {
   const char *name;
-} data_type_names[] = {
+} mem_type_names[] = {
   { "invalid" },
   { "memptr" },
   { "memfd" },
@@ -44,7 +44,7 @@ struct data_type_name {
   { "ID" },
   { "invalid" },
 };
-#define DATA_TYPE_NAME(t)  data_type_names[SPA_CLAMP(t,0,SPA_N_ELEMENTS(data_type_names)-1)].name
+#define MEM_TYPE_NAME(t)  mem_type_names[SPA_CLAMP(t,0,SPA_N_ELEMENTS(mem_type_names)-1)].name
 
 SpaResult
 spa_debug_port_info (const SpaPortInfo *info)
@@ -130,11 +130,12 @@ spa_debug_buffer (const SpaBuffer *buffer)
   fprintf (stderr, " n_metas: %u (at %p)\n", buffer->n_metas, buffer->metas);
   for (i = 0; i < buffer->n_metas; i++) {
     SpaMeta *m = &buffer->metas[i];
-    fprintf (stderr, "  meta %d: type %d (%s), data %p, size %zd:\n", i, m->type, META_TYPE_NAME (m->type), m->data, m->size);
+    fprintf (stderr, "  meta %d: type %d (%s), data %p, size %zd:\n",
+        i, m->type, META_TYPE_NAME (m->type), m->mem.ptr, m->mem.size);
     switch (m->type) {
       case SPA_META_TYPE_HEADER:
       {
-        SpaMetaHeader *h = m->data;
+        SpaMetaHeader *h = m->mem.ptr;
         fprintf (stderr, "    SpaMetaHeader:\n");
         fprintf (stderr, "      flags:      %08x\n", h->flags);
         fprintf (stderr, "      seq:        %u\n", h->seq);
@@ -144,16 +145,16 @@ spa_debug_buffer (const SpaBuffer *buffer)
       }
       case SPA_META_TYPE_POINTER:
       {
-        SpaMetaPointer *h = m->data;
+        SpaMetaPointer *h = m->mem.ptr;
         fprintf (stderr, "    SpaMetaPointer:\n");
         fprintf (stderr, "      ptr_type:   %s\n", h->ptr_type);
         fprintf (stderr, "      ptr:        %p\n", h->ptr);
-        spa_debug_dump_mem (m->data, m->size);
+        spa_debug_dump_mem (m->mem.ptr, m->mem.size);
         break;
       }
       case SPA_META_TYPE_VIDEO_CROP:
       {
-        SpaMetaVideoCrop *h = m->data;
+        SpaMetaVideoCrop *h = m->mem.ptr;
         fprintf (stderr, "    SpaMetaVideoCrop:\n");
         fprintf (stderr, "      x:      %d\n", h->x);
         fprintf (stderr, "      y:      %d\n", h->y);
@@ -163,7 +164,7 @@ spa_debug_buffer (const SpaBuffer *buffer)
       }
       case SPA_META_TYPE_RINGBUFFER:
       {
-        SpaMetaRingbuffer *h = m->data;
+        SpaMetaRingbuffer *h = m->mem.ptr;
         fprintf (stderr, "    SpaMetaRingbuffer:\n");
         fprintf (stderr, "      readindex:   %zd\n", h->ringbuffer.readindex);
         fprintf (stderr, "      writeindex:  %zd\n", h->ringbuffer.writeindex);
@@ -173,21 +174,22 @@ spa_debug_buffer (const SpaBuffer *buffer)
         break;
       }
       default:
-        spa_debug_dump_mem (m->data, m->size);
+        spa_debug_dump_mem (m->mem.ptr, m->mem.size);
         break;
     }
   }
   fprintf (stderr, " n_datas: \t%u (at %p)\n", buffer->n_datas, buffer->datas);
   for (i = 0; i < buffer->n_datas; i++) {
     SpaData *d = &buffer->datas[i];
-    fprintf (stderr, "   type:    %d (%s)\n", d->type, DATA_TYPE_NAME (d->type));
-    fprintf (stderr, "   flags:   %d\n", d->flags);
-    fprintf (stderr, "   data:    %p\n", d->data);
-    fprintf (stderr, "   fd:      %d\n", d->fd);
-    fprintf (stderr, "   maxsize: %zd\n", d->maxsize);
-    fprintf (stderr, "   offset:  %zd\n", d->offset);
-    fprintf (stderr, "   size:    %zd\n", d->size);
-    fprintf (stderr, "   stride:  %zd\n", d->stride);
+    fprintf (stderr, "   type:    %d (%s)\n", d->mem.mem->type, MEM_TYPE_NAME (d->mem.mem->type));
+    fprintf (stderr, "   flags:   %d\n", d->mem.mem->flags);
+    fprintf (stderr, "   fd:      %d\n", d->mem.mem->fd);
+    fprintf (stderr, "   offset:  %zd\n", d->mem.mem->offset);
+    fprintf (stderr, "   size:    %zd\n", d->mem.mem->size);
+    fprintf (stderr, "   ptr:     %p\n", d->mem.mem->ptr);
+    fprintf (stderr, "   offset:  %zd\n", d->chunk.chunk->offset);
+    fprintf (stderr, "   size:    %zd\n", d->chunk.chunk->size);
+    fprintf (stderr, "   stride:  %zd\n", d->chunk.chunk->stride);
   }
   return SPA_RESULT_OK;
 }

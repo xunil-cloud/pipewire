@@ -682,16 +682,16 @@ spa_audiotestsrc_node_port_use_buffers (SpaNode         *node,
     b->outstanding = true;
     b->h = spa_buffer_find_meta (buffers[i], SPA_META_TYPE_HEADER);
 
-    switch (d[0].type) {
-      case SPA_DATA_TYPE_MEMPTR:
-      case SPA_DATA_TYPE_MEMFD:
-      case SPA_DATA_TYPE_DMABUF:
-        if (d[0].data == NULL) {
+    switch (SPA_DATA_MEM_TYPE (&d[0])) {
+      case SPA_MEM_TYPE_MEMPTR:
+      case SPA_MEM_TYPE_MEMFD:
+      case SPA_MEM_TYPE_DMABUF:
+        if (SPA_DATA_MEM_PTR (&d[0]) == NULL) {
           spa_log_error (this->log, "audiotestsrc %p: invalid memory on buffer %p", this, buffers[i]);
           continue;
         }
-        b->ptr = SPA_MEMBER (d[0].data, d[0].offset, void);
-        b->size = d[0].size;
+        b->ptr = SPA_DATA_CHUNK_PTR (&d[0]);
+        b->size = SPA_DATA_CHUNK_SIZE (&d[0]);
         break;
       default:
         break;
