@@ -749,7 +749,7 @@ static int test_extract3(const char *fmt)
 	struct spa_json_chunk chunk;
 	struct spa_json_chunk media_type;
 	struct spa_json_chunk media_subtype;
-	struct spa_json_chunk format;
+	struct spa_json_chunk format = { "*unset*", 7 };
 	int rate = -1, res;
 	struct spa_json_prop channels;
 
@@ -813,6 +813,16 @@ int main(int argc, char *argv[])
                 "    \"format\":      \"S16LE\", "
                 "    \"rate\":        44100, "
                 "    \"channels\":    2, "
+                "  }"
+                "]");
+
+	test_extract3(
+		"[ \"Format\", "
+		"  [ \"audio\", \"raw\"], "
+                "  { "
+                "    \"format\":      [ \"seu\", \"S16LE\", [ \"F32LE\", \"S16LE\" ]], "
+                "    \"rate\":        48000, "
+                "    \"channels\":    1, "
                 "  }"
                 "]");
 
