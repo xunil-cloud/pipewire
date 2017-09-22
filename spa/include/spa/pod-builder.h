@@ -195,11 +195,23 @@ static inline uint32_t spa_pod_builder_double(struct spa_pod_builder *builder, d
 #define SPA_POD_STRING_INIT(len) { { len, SPA_POD_TYPE_STRING } }
 
 static inline uint32_t
+spa_pod_builder_write_string(struct spa_pod_builder *builder, const char *str, uint32_t len)
+{
+	uint32_t ref = 0;
+	if (spa_pod_builder_raw(builder, str, len) == -1)
+		ref = -1;
+	if (spa_pod_builder_raw(builder, "", 1) == -1)
+		ref = -1;
+	spa_pod_builder_pad(builder, builder->offset);
+	return ref;
+}
+
+static inline uint32_t
 spa_pod_builder_string_len(struct spa_pod_builder *builder, const char *str, uint32_t len)
 {
-	const struct spa_pod_string p = SPA_POD_STRING_INIT(len);
+	const struct spa_pod_string p = SPA_POD_STRING_INIT(len+1);
 	uint32_t ref = spa_pod_builder_raw(builder, &p, sizeof(p));
-	if (spa_pod_builder_raw_padded(builder, str, len) == -1)
+	if (spa_pod_builder_write_string(builder, str, len) == -1)
 		ref = -1;
 	return ref;
 }
@@ -207,8 +219,27 @@ spa_pod_builder_string_len(struct spa_pod_builder *builder, const char *str, uin
 static inline uint32_t spa_pod_builder_string(struct spa_pod_builder *builder, const char *str)
 {
 	uint32_t len = str ? strlen(str) : 0;
-	return spa_pod_builder_string_len(builder, str ? str : "", len + 1);
+	return spa_pod_builder_string_len(builder, str ? str : "", len);
 }
+
+#define SPA_POD_KEY_INIT(len) { { len, SPA_POD_TYPE_KEY } }
+
+static inline uint32_t
+spa_pod_builder_key_len(struct spa_pod_builder *builder, const char *key, uint32_t len)
+{
+	const struct spa_pod_key p = SPA_POD_KEY_INIT(len+1);
+	uint32_t ref = spa_pod_builder_raw(builder, &p, sizeof(p));
+	if (spa_pod_builder_write_string(builder, key, len) == -1)
+		ref = -1;
+	return ref;
+}
+
+static inline uint32_t spa_pod_builder_key(struct spa_pod_builder *builder, const char *key)
+{
+	uint32_t len = key ? strlen(key) : 0;
+	return spa_pod_builder_key_len(builder, key ? key : "", len);
+}
+
 
 #define SPA_POD_BYTES_INIT(len) { { len, SPA_POD_TYPE_BYTES } }
 
@@ -228,6 +259,14 @@ static inline uint32_t
 spa_pod_builder_pointer(struct spa_pod_builder *builder, uint32_t type, void *val)
 {
 	const struct spa_pod_pointer p = SPA_POD_POINTER_INIT(type, val);
+	return spa_pod_builder_primitive(builder, &p.pod);
+}
+
+#define SPA_POD_FD_INIT(fd) { { sizeof(int), SPA_POD_TYPE_FD }, fd }
+
+static inline uint32_t spa_pod_builder_fd(struct spa_pod_builder *builder, int fd)
+{
+	const struct spa_pod_fd p = SPA_POD_FD_INIT(fd);
 	return spa_pod_builder_primitive(builder, &p.pod);
 }
 
@@ -280,6 +319,26 @@ static inline uint32_t
 spa_pod_builder_push_struct(struct spa_pod_builder *builder, struct spa_pod_frame *frame)
 {
 	const struct spa_pod_struct p = SPA_POD_STRUCT_INIT(0);
+	return spa_pod_builder_push(builder, frame, &p.pod,
+				    spa_pod_builder_raw(builder, &p, sizeof(p)));
+}
+
+#define SPA_POD_MAP_INIT(size) { { size, SPA_POD_TYPE_MAP } }
+
+static inline uint32_t
+spa_pod_builder_push_map(struct spa_pod_builder *builder, struct spa_pod_frame *frame)
+{
+	const struct spa_pod_map p = SPA_POD_MAP_INIT(0);
+	return spa_pod_builder_push(builder, frame, &p.pod,
+				    spa_pod_builder_raw(builder, &p, sizeof(p)));
+}
+
+
+static inline uint32_t
+spa_pod_builder_push_key(struct spa_pod_builder *builder, struct spa_pod_frame *frame, const char *key)
+{
+	const struct spa_pod_key p = SPA_POD_KEY_INIT(0);
+
 	return spa_pod_builder_push(builder, frame, &p.pod,
 				    spa_pod_builder_raw(builder, &p, sizeof(p)));
 }

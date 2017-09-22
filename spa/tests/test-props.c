@@ -351,6 +351,16 @@ int main(int argc, char *argv[])
 
 	spa_pod_builder_init(&b, buffer, sizeof(buffer));
 
+	/*
+	 *  ( "Format",
+	 *    ("video", "raw" ),
+	 *    {
+	 *      "format":    ( "seu", "I420", ( "I420","YUY2" ) ),
+	 *      "size":      ( "Rru", (320, 242), ( (1,1), (MAX, MAX)) ),
+	 *      "framerate": ( "Fru", (25, 1), ( (0,1), (MAX, 1)) )
+	 *    }
+	 *  )
+	 */
 	spa_pod_builder_add(&b,
 		SPA_POD_TYPE_OBJECT, &frame[0], 0, type.format,
 			SPA_POD_TYPE_ID, type.media_type.video,

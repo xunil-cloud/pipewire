@@ -305,6 +305,17 @@ impl_node_port_enum_formats(struct spa_node *node,
 
 	switch (count++) {
 	case 0:
+		/**
+		 * fmt = spa_pod_maker_build(&m,
+                                "( \"Format\", "
+                                " (\"audio\", \"raw\" ), "
+                                " { "
+                                "   \"format\":   ( \"seu\", \"S16\", ( \"S16\",\"S32\" ) ), "
+                                "   \"rate\":     ( \"iru\", 44100, ( 1, #INT32_MAX ) ), "
+                                "   \"channels\": ( \"iru\", 2, ( 1, #INT32_MAX ) ) "
+                                " } "
+                                ") ");
+		*/
 		spa_pod_builder_format(&b, &f[0], this->type.format,
 			this->type.media_type.audio,
 			this->type.media_subtype.raw,
@@ -410,6 +421,20 @@ impl_node_port_get_format(struct spa_node *node,
 	if (!port->have_format)
 		return SPA_RESULT_NO_FORMAT;
 
+		/**
+		 * fmt = spa_pod_maker_build(&m,
+                                "( \"Format\", "
+                                " (\"audio\", \"raw\" ), "
+                                " { "
+                                "   \"format\":   %s, "
+                                "   \"rate\":     %i, "
+                                "   \"channels\": %i "
+                                " } "
+                                ") ",
+				this->current_format.info.raw.format,
+				this->current_format.info.raw.rate,
+				this->current_format.info.raw.channels);
+		*/
         spa_pod_builder_init(&b, this->format_buffer, sizeof(this->format_buffer));
         spa_pod_builder_format(&b, &f[0], this->type.format,
                 this->type.media_type.audio,

@@ -198,11 +198,17 @@ print_pod_value(uint32_t size, uint32_t type, void *body, int prefix)
 	case SPA_POD_TYPE_STRING:
 		printf("%-*sString \"%s\"\n", prefix, "", (char *) body);
 		break;
+	case SPA_POD_TYPE_KEY:
+		printf("%-*sKey \"%s\"\n", prefix, "", (char *) body);
+		break;
+	case SPA_POD_TYPE_FD:
+		printf("%-*sFd %d\n", prefix, "", *(int *) body);
+		break;
 	case SPA_POD_TYPE_POINTER:
 	{
 		struct spa_pod_pointer_body *b = body;
 		printf("%-*sPointer %s %p\n", prefix, "",
-		       spa_type_map_get_type(map, b->type), b->value);
+		       map ? spa_type_map_get_type(map, b->type) : "*no map*", b->value);
 		break;
 	}
 	case SPA_POD_TYPE_RECTANGLE:
@@ -239,13 +245,21 @@ print_pod_value(uint32_t size, uint32_t type, void *body, int prefix)
 			print_pod_value(p->size, p->type, SPA_POD_BODY(p), prefix + 2);
 		break;
 	}
+	case SPA_POD_TYPE_MAP:
+	{
+		struct spa_pod *b = body, *p;
+		printf("%-*sMap: size %d\n", prefix, "", size);
+		SPA_POD_FOREACH(b, size, p)
+			print_pod_value(p->size, p->type, SPA_POD_BODY(p), prefix + 2);
+		break;
+	}
 	case SPA_POD_TYPE_OBJECT:
 	{
 		struct spa_pod_object_body *b = body;
 		struct spa_pod *p;
 
 		printf("%-*sObject: size %d, id %d, type %s\n", prefix, "", size, b->id,
-		       spa_type_map_get_type(map, b->type));
+		       map ? spa_type_map_get_type(map, b->type) : "*no map*");
 		SPA_POD_OBJECT_BODY_FOREACH(b, size, p)
 			print_pod_value(p->size, p->type, SPA_POD_BODY(p), prefix + 2);
 		break;
