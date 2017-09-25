@@ -89,11 +89,14 @@ enum spa_direction {
 	SPA_DIRECTION_OUTPUT = 1,
 };
 
+#define SPA_RECTANGLE(width,height) (struct spa_rectangle){ width, height }
+
 struct spa_rectangle {
 	uint32_t width;
 	uint32_t height;
 };
 
+#define SPA_FRACTION(num,denom) (struct spa_fraction){ num, denom }
 struct spa_fraction {
 	uint32_t num;
 	uint32_t denom;

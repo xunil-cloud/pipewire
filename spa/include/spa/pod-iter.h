@@ -35,11 +35,11 @@ struct spa_pod_iter {
 	uint32_t offset;
 };
 
-static inline void spa_pod_iter_contents(struct spa_pod_iter *iter, const void *data, uint32_t size)
+static inline void spa_pod_iter_init(struct spa_pod_iter *iter, const void *data, uint32_t size, uint32_t offset)
 {
 	iter->data = data;
 	iter->size = size;
-	iter->offset = 0;
+	iter->offset = offset;
 }
 
 static inline bool spa_pod_iter_struct(struct spa_pod_iter *iter, const void *data, uint32_t size)
@@ -48,8 +48,17 @@ static inline bool spa_pod_iter_struct(struct spa_pod_iter *iter, const void *da
 	    || SPA_POD_TYPE(data) != SPA_POD_TYPE_STRUCT)
 		return false;
 
-	spa_pod_iter_contents(iter, SPA_POD_CONTENTS(struct spa_pod_struct, data),
-			      SPA_POD_CONTENTS_SIZE(struct spa_pod_struct, data));
+	spa_pod_iter_init(iter, data, size, sizeof(struct spa_pod_struct));
+	return true;
+}
+
+static inline bool spa_pod_iter_map(struct spa_pod_iter *iter, const void *data, uint32_t size)
+{
+	if (data == NULL || size < 8 || SPA_POD_SIZE(data) > size
+	    || SPA_POD_TYPE(data) != SPA_POD_TYPE_MAP)
+		return false;
+
+	spa_pod_iter_init(iter, data, size, sizeof(struct spa_pod_map));
 	return true;
 }
 
@@ -58,30 +67,31 @@ static inline bool spa_pod_iter_object(struct spa_pod_iter *iter, const void *da
 	if (data == NULL || SPA_POD_SIZE(data) > size || SPA_POD_TYPE(data) != SPA_POD_TYPE_OBJECT)
 		return false;
 
-	spa_pod_iter_contents(iter, SPA_POD_CONTENTS(struct spa_pod_object, data),
-			      SPA_POD_CONTENTS_SIZE(struct spa_pod_object, data));
+	iter->data = data;
+	iter->size = size;
+	iter->offset = sizeof(struct spa_pod_object);
 	return true;
 }
 
 static inline bool spa_pod_iter_pod(struct spa_pod_iter *iter, struct spa_pod *pod)
 {
-	void *data;
-	uint32_t size;
+	uint32_t offset;
 
 	switch (SPA_POD_TYPE(pod)) {
 	case SPA_POD_TYPE_STRUCT:
-		data = SPA_POD_CONTENTS(struct spa_pod_struct, pod);
-		size = SPA_POD_CONTENTS_SIZE(struct spa_pod_struct, pod);
+		offset = sizeof(struct spa_pod_struct);
+		break;
+	case SPA_POD_TYPE_MAP:
+		offset = sizeof(struct spa_pod_map);
 		break;
 	case SPA_POD_TYPE_OBJECT:
-		data = SPA_POD_CONTENTS(struct spa_pod_object, pod);
-		size = SPA_POD_CONTENTS_SIZE(struct spa_pod_object, pod);
+		offset = sizeof(struct spa_pod_object);
 		break;
 	default:
-		spa_pod_iter_contents(iter, NULL, 0);
+		spa_pod_iter_init(iter, NULL, 0, 0);
 		return false;
 	}
-	spa_pod_iter_contents(iter, data, size);
+	spa_pod_iter_init(iter, pod, SPA_POD_SIZE(pod), offset);
 	return true;
 }
 

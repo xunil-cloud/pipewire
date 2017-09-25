@@ -140,7 +140,7 @@ spa_json_iter_next_chunk(struct spa_json_iter *iter, struct spa_json_chunk *chun
 		unsigned char cur = (unsigned char) *iter->cur;
 again:
 		switch (iter->state) {
-		case 0:
+		case 0: /* scanning for objects */
 			switch (cur) {
 			case '\t': case ' ': case '\r': case '\n': case ':': case ',':
 				continue;
@@ -167,7 +167,7 @@ again:
 				return 0;
 			}
 			return -1;
-		case 1:
+		case 1: /* token */
 			switch (cur) {
 			case '\t': case ' ': case '\r': case '\n': case ':': case ',':
 			case ']': case '}':
@@ -180,7 +180,7 @@ again:
 					continue;
 		        }
 		        return -1;
-		case 2:
+		case 2: /* string */
 			switch (cur) {
 			case '\\':
 				iter->state = 4;
@@ -204,7 +204,7 @@ again:
 					continue;
 			}
 			return -1;
-		case 3:
+		case 3: /* utf chars */
 			switch (cur) {
 			case 128 ... 191:
 				if (--utf8_remain == 0)
@@ -212,7 +212,7 @@ again:
 				continue;
 			}
 			return -1;
-		case 4:
+		case 4: /* inside escape chars */
 			switch (cur) {
 			case '"': case '\\': case '/': case 'b': case 'f': case 'n': case 'r':
 			case 't': case 'u':

@@ -287,7 +287,6 @@ int main(int argc, char *argv[])
 	test_extract2(format);
 	test_extract3(format);
 
-
 	test_extract3(
 		"[ \"Format\", "
 		"  [ \"audio\", \"raw\"], "
