@@ -404,7 +404,7 @@ spa_pod_match(struct spa_pod *pod,
 	int type, len;
 	struct spa_pod *current = pod;
 	struct spa_pod_prop2 prop;
-	bool store;
+	bool store, maybe;
 
 	va_start(args, templ);
 	while (*templ != '\0') {
@@ -445,6 +445,7 @@ spa_pod_match(struct spa_pod *pod,
 					    strncmp(SPA_POD_CONTENTS_CONST(struct spa_pod_key, current),
 						    start, len) == 0)
 						break;
+					current = NULL;
 				}
 			}
 			else {
@@ -457,18 +458,27 @@ spa_pod_match(struct spa_pod *pod,
 		case '@':
 		case '%':
 			last = *templ;
-			templ++;
-			if (*templ == '\0')
+			if (*++templ == '\0')
 				return -1;
 
 			store = *templ != '*';
 			if (!store)
-				templ++;
+				if (*++templ == '\0')
+					return -1;
+
+			maybe = *templ == '?';
+			if (maybe)
+				if (*++templ == '\0')
+					return -1;
 
 			if (*templ == 'V' || *templ == 'v') {
 				char t = *templ;
 				templ++;
 				type = spa_pod_id_to_type(*templ);
+
+				if (current == NULL)
+					goto no_current;
+
 				if (spa_pod_parse_prop(current, type, &prop) < 0)
 					return -1;
 
@@ -488,8 +498,11 @@ spa_pod_match(struct spa_pod *pod,
 				}
 			}
 
+		      no_current:
 			type = spa_pod_id_to_type(*templ);
 			if (current == NULL || (type != SPA_POD_TYPE_POD && type != SPA_POD_TYPE(current))) {
+				if (!maybe)
+					return -1;
 				if (store)
 					va_arg(args, void *);
 				goto skip;
@@ -644,6 +657,7 @@ static int test_match(const char *fmt)
 		"    \"rate\":        @vi", &rate,
 		"    \"format\":      @vs", &format,
 		"    \"channels\":    @VP", &channels,
+		"    \"foo\":         @?VP", &channels,
 		"  } "
 		"]");
 
