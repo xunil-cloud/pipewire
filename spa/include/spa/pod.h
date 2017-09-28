@@ -53,17 +53,15 @@ enum spa_pod_type {
 	SPA_POD_TYPE_DOUBLE,
 
 	SPA_POD_TYPE_STRING,
-	SPA_POD_TYPE_KEY,
 	SPA_POD_TYPE_BYTES,
 
 	SPA_POD_TYPE_RECTANGLE,
 	SPA_POD_TYPE_FRACTION,
-	SPA_POD_TYPE_BITMASK,
+	SPA_POD_TYPE_BITMAP,
 
 	SPA_POD_TYPE_ARRAY,
 	SPA_POD_TYPE_STRUCT,
 	SPA_POD_TYPE_OBJECT,
-	SPA_POD_TYPE_MAP,
 
 	SPA_POD_TYPE_POINTER,
 	SPA_POD_TYPE_FD,
@@ -117,11 +115,6 @@ struct spa_pod_string {
 	/* value here */
 };
 
-struct spa_pod_key {
-	struct spa_pod pod;
-	/* key value here */
-};
-
 struct spa_pod_bytes {
 	struct spa_pod pod;
 	/* value here */
@@ -156,12 +149,6 @@ struct spa_pod_struct {
 	struct spa_pod pod;
 	/* one or more spa_pod follow */
 };
-
-struct spa_pod_map {
-	struct spa_pod pod;
-	/* zero or more spa_pod_key follow */
-};
-
 
 struct spa_pod_object_body {
 	uint32_t id;

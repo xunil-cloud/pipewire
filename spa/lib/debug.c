@@ -151,25 +151,26 @@ int spa_debug_param(const struct spa_param *param)
 }
 
 static const char *pod_type_names[] = {
-	"invalid",
-	"none",
-	"bool",
-	"id",
-	"int",
-	"long",
-	"float",
-	"double",
-	"string",
-	"bytes",
-	"pointer",
-	"rectangle",
-	"fraction",
-	"bitmask",
-	"array",
-	"struct",
-	"object",
-	"prop",
-	"pod"
+	[SPA_POD_TYPE_INVALID] = "invalid",
+	[SPA_POD_TYPE_NONE] = "none",
+	[SPA_POD_TYPE_BOOL] = "bool",
+	[SPA_POD_TYPE_ID] = "id",
+	[SPA_POD_TYPE_INT] = "int",
+	[SPA_POD_TYPE_LONG] = "long",
+	[SPA_POD_TYPE_FLOAT] = "float",
+	[SPA_POD_TYPE_DOUBLE] = "double",
+	[SPA_POD_TYPE_STRING] = "string",
+	[SPA_POD_TYPE_BYTES] = "bytes",
+	[SPA_POD_TYPE_RECTANGLE] = "rectangle",
+	[SPA_POD_TYPE_FRACTION] = "fraction",
+	[SPA_POD_TYPE_BITMAP] = "bitmap",
+	[SPA_POD_TYPE_ARRAY] = "array",
+	[SPA_POD_TYPE_STRUCT] = "struct",
+	[SPA_POD_TYPE_OBJECT] = "object",
+	[SPA_POD_TYPE_POINTER] = "pointer",
+	[SPA_POD_TYPE_FD] = "fd",
+	[SPA_POD_TYPE_PROP] = "prop",
+	[SPA_POD_TYPE_POD] = "pod"
 };
 
 static void
@@ -198,9 +199,6 @@ print_pod_value(uint32_t size, uint32_t type, void *body, int prefix)
 	case SPA_POD_TYPE_STRING:
 		printf("%-*sString \"%s\"\n", prefix, "", (char *) body);
 		break;
-	case SPA_POD_TYPE_KEY:
-		printf("%-*sKey \"%s\"\n", prefix, "", (char *) body);
-		break;
 	case SPA_POD_TYPE_FD:
 		printf("%-*sFd %d\n", prefix, "", *(int *) body);
 		break;
@@ -223,8 +221,8 @@ print_pod_value(uint32_t size, uint32_t type, void *body, int prefix)
 		printf("%-*sFraction %d/%d\n", prefix, "", f->num, f->denom);
 		break;
 	}
-	case SPA_POD_TYPE_BITMASK:
-		printf("%-*sBitmask\n", prefix, "");
+	case SPA_POD_TYPE_BITMAP:
+		printf("%-*sBitmap\n", prefix, "");
 		break;
 	case SPA_POD_TYPE_ARRAY:
 	{
@@ -241,14 +239,6 @@ print_pod_value(uint32_t size, uint32_t type, void *body, int prefix)
 	{
 		struct spa_pod *b = body, *p;
 		printf("%-*sStruct: size %d\n", prefix, "", size);
-		SPA_POD_FOREACH(b, size, p)
-			print_pod_value(p->size, p->type, SPA_POD_BODY(p), prefix + 2);
-		break;
-	}
-	case SPA_POD_TYPE_MAP:
-	{
-		struct spa_pod *b = body, *p;
-		printf("%-*sMap: size %d\n", prefix, "", size);
 		SPA_POD_FOREACH(b, size, p)
 			print_pod_value(p->size, p->type, SPA_POD_BODY(p), prefix + 2);
 		break;
@@ -271,7 +261,7 @@ print_pod_value(uint32_t size, uint32_t type, void *body, int prefix)
 		int i;
 
 		printf("%-*sProp: key %s, flags %d\n", prefix, "",
-		       spa_type_map_get_type(map, b->key), b->flags);
+		       map ? spa_type_map_get_type(map, b->key) : "*no map*", b->flags);
 		if (b->flags & SPA_POD_PROP_FLAG_UNSET)
 			printf("%-*sUnset (Default):\n", prefix + 2, "");
 		else
@@ -317,7 +307,7 @@ print_format_value(uint32_t size, uint32_t type, void *body)
 		break;
 	case SPA_POD_TYPE_ID:
 	{
-		const char *str = spa_type_map_get_type(map, *(int32_t *) body);
+		const char *str = map ? spa_type_map_get_type(map, *(int32_t *) body) : NULL;
 		if (str) {
 			const char *h = rindex(str, ':');
 			if (h)
@@ -355,8 +345,8 @@ print_format_value(uint32_t size, uint32_t type, void *body)
 		fprintf(stderr, "%" PRIu32 "/%" PRIu32, f->num, f->denom);
 		break;
 	}
-	case SPA_POD_TYPE_BITMASK:
-		fprintf(stderr, "Bitmask");
+	case SPA_POD_TYPE_BITMAP:
+		fprintf(stderr, "Bitmap");
 		break;
 	case SPA_POD_TYPE_BYTES:
 		fprintf(stderr, "Bytes");
