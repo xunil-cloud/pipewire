@@ -286,8 +286,9 @@ bool pw_port_add(struct pw_port *port, struct pw_node *node)
 		node->info.n_output_ports++;
 		node->info.change_mask |= PW_NODE_CHANGE_MASK_OUTPUT_PORTS;
 	}
+	spa_hook_list_call(&node->listener_list, struct pw_node_events, port_init, port);
 
-	spa_node_port_set_io(node->node, port->direction, port_id, &port->io);
+	spa_node_port_set_io(node->node, port->direction, port_id, port->rt.port.io);
 
 	port->rt.graph = node->rt.graph;
 	pw_loop_invoke(node->data_loop, do_add_port, SPA_ID_INVALID, 0, NULL, false, port);

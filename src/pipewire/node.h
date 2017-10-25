@@ -59,6 +59,8 @@ struct pw_node_events {
 	/** the node is initialized */
         void (*initialized) (void *data);
 
+	/* a port is about to be added to a node */
+        void (*port_init) (void *data, struct pw_port *port);
 	/** a port was added */
         void (*port_added) (void *data, struct pw_port *port);
 	/** a port was removed */

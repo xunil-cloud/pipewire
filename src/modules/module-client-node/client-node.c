@@ -34,6 +34,7 @@
 
 #include "pipewire/pipewire.h"
 #include "pipewire/interfaces.h"
+#include "pipewire/private.h"
 
 #include "pipewire/core.h"
 #include "modules/spa/spa-node.h"
@@ -128,7 +129,6 @@ struct impl {
 	int other_fds[2];
 
 	bool client_reuse;
-	bool out_pending;
 };
 
 /** \endcond */
@@ -746,99 +746,35 @@ spa_proxy_node_port_send_command(struct spa_node *node,
 
 static int spa_proxy_node_process_input(struct spa_node *node)
 {
-	struct impl *impl;
-	struct proxy *this;
-	int i, res = SPA_RESULT_OK;
+	struct proxy *this = SPA_CONTAINER_OF(node, struct proxy, node);
+	struct impl *impl = this->impl;
 
-	if (node == NULL)
-		return SPA_RESULT_INVALID_ARGUMENTS;
-
-	this = SPA_CONTAINER_OF(node, struct proxy, node);
-	impl = this->impl;
-
-	for (i = 0; i < MAX_INPUTS; i++) {
-		struct spa_port_io *io = this->in_ports[i].io;
-
-		if (!io)
-			continue;
-
-		impl->transport->inputs[i] = *io;
-		pw_log_trace("%d %d -> %d %d", io->status, io->buffer_id,
-				impl->transport->inputs[i].status,
-				impl->transport->inputs[i].buffer_id);
-
-		if (impl->client_reuse)
-			io->buffer_id = SPA_ID_INVALID;
-	}
 	pw_client_node_transport_add_message(impl->transport,
 			       &PW_CLIENT_NODE_MESSAGE_INIT(PW_CLIENT_NODE_MESSAGE_PROCESS_INPUT));
 	do_flush(this);
 
-	return res;
+	return SPA_RESULT_OK;
 }
 
 static int spa_proxy_node_process_output(struct spa_node *node)
 {
-	struct proxy *this;
-	struct impl *impl;
-	int i, res = SPA_RESULT_OK;
-
-	this = SPA_CONTAINER_OF(node, struct proxy, node);
-	impl = this->impl;
-
-	if (impl->out_pending)
-		return res;
-
-	impl->out_pending = true;
-
-	for (i = 0; i < MAX_OUTPUTS; i++) {
-		struct spa_port_io *io = this->out_ports[i].io;
-
-		if (!io)
-			continue;
-
-		impl->transport->outputs[i] = *io;
-		pw_log_trace("%d %d -> %d %d", io->status, io->buffer_id,
-				impl->transport->outputs[i].status,
-				impl->transport->outputs[i].buffer_id);
-	}
+	struct proxy *this = SPA_CONTAINER_OF(node, struct proxy, node);
+	struct impl *impl = this->impl;
 
 	pw_client_node_transport_add_message(impl->transport,
 			       &PW_CLIENT_NODE_MESSAGE_INIT(PW_CLIENT_NODE_MESSAGE_PROCESS_OUTPUT));
 	do_flush(this);
 
-	return res;
+	return SPA_RESULT_OK;
 }
 
 static int handle_node_message(struct proxy *this, struct pw_client_node_message *message)
 {
 	struct impl *impl = SPA_CONTAINER_OF(this, struct impl, proxy);
-	int i;
 
 	if (PW_CLIENT_NODE_MESSAGE_TYPE(message) == PW_CLIENT_NODE_MESSAGE_HAVE_OUTPUT) {
-		for (i = 0; i < MAX_OUTPUTS; i++) {
-			struct spa_port_io *io = this->out_ports[i].io;
-
-			if (!io)
-				continue;
-
-			*io = impl->transport->outputs[i];
-			pw_log_trace("%d %d", io->status, io->buffer_id);
-			impl->out_pending = false;
-		}
 		this->callbacks->have_output(this->callbacks_data);
 	} else if (PW_CLIENT_NODE_MESSAGE_TYPE(message) == PW_CLIENT_NODE_MESSAGE_NEED_INPUT) {
-		for (i = 0; i < MAX_INPUTS; i++) {
-			struct spa_port_io *io = this->in_ports[i].io;
-
-			if (!io)
-				continue;
-
-			*io = impl->transport->inputs[i];
-			if (impl->client_reuse)
-				io->buffer_id = SPA_ID_INVALID;
-			pw_log_trace("%d %d", io->status, io->buffer_id);
-		}
 		this->callbacks->need_input(this->callbacks_data);
 	} else if (PW_CLIENT_NODE_MESSAGE_TYPE(message) == PW_CLIENT_NODE_MESSAGE_REUSE_BUFFER) {
 		if (impl->client_reuse) {
@@ -851,11 +787,25 @@ static int handle_node_message(struct proxy *this, struct pw_client_node_message
 	return SPA_RESULT_OK;
 }
 
+static void setup_transport(struct impl *impl)
+{
+	uint32_t max_inputs = 0, max_outputs = 0, n_inputs = 0, n_outputs = 0;
+
+	spa_proxy_node_get_n_ports(&impl->proxy.node, &n_inputs, &max_inputs, &n_outputs, &max_outputs);
+
+	impl->transport = pw_client_node_transport_new(max_inputs, max_outputs);
+	impl->transport->area->n_input_ports = n_inputs;
+	impl->transport->area->n_output_ports = n_outputs;
+}
+
 static void
 client_node_done(void *data, int seq, int res)
 {
 	struct impl *impl = data;
 	struct proxy *this = &impl->proxy;
+
+	if (seq == 0 && res == SPA_RESULT_OK)
+		setup_transport(impl);
 
 	this->callbacks->done(this->callbacks_data, seq, res);
 }
@@ -1028,59 +978,6 @@ proxy_init(struct proxy *this,
 	return SPA_RESULT_RETURN_ASYNC(this->seq++);
 }
 
-static int client_node_get_fds(struct pw_client_node *node, int *readfd, int *writefd)
-{
-	struct impl *impl = SPA_CONTAINER_OF(node, struct impl, this);
-
-	if (impl->fds[0] == -1) {
-#if 0
-		if (socketpair(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC | SOCK_NONBLOCK, 0, impl->fds) !=
-		    0)
-			return SPA_RESULT_ERRNO;
-
-		impl->proxy.data_source.fd = impl->fds[0];
-		impl->proxy.writefd = impl->fds[0];
-		impl->other_fds[0] = impl->fds[1];
-		impl->other_fds[1] = impl->fds[1];
-#else
-		impl->fds[0] = eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK);
-		impl->fds[1] = eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK);
-		impl->proxy.data_source.fd = impl->fds[0];
-		impl->proxy.writefd = impl->fds[1];
-		impl->other_fds[0] = impl->fds[1];
-		impl->other_fds[1] = impl->fds[0];
-#endif
-
-		spa_loop_add_source(impl->proxy.data_loop, &impl->proxy.data_source);
-		pw_log_debug("client-node %p: add data fd %d", node, impl->proxy.data_source.fd);
-	}
-	*readfd = impl->other_fds[0];
-	*writefd = impl->other_fds[1];
-
-	return SPA_RESULT_OK;
-}
-
-static void node_initialized(void *data)
-{
-	struct impl *impl = data;
-	struct pw_client_node *this = &impl->this;
-	struct pw_node *node = this->node;
-	int readfd, writefd;
-	const struct pw_node_info *i = pw_node_get_info(node);
-
-	if (this->resource == NULL)
-		return;
-
-	impl->transport = pw_client_node_transport_new(i->max_input_ports, i->max_output_ports);
-	impl->transport->area->n_input_ports = i->n_input_ports;
-	impl->transport->area->n_output_ports = i->n_output_ports;
-
-	client_node_get_fds(this, &readfd, &writefd);
-
-	pw_client_node_resource_transport(this->resource, pw_global_get_id(pw_node_get_global(node)),
-					  readfd, writefd, impl->transport);
-}
-
 static int proxy_clear(struct proxy *this)
 {
 	uint32_t i;
@@ -1113,6 +1010,47 @@ static void client_node_resource_destroy(void *data)
 	pw_node_destroy(this->node);
 }
 
+static void node_port_init(void *data, struct pw_port *port)
+{
+	struct impl *impl = data;
+
+	switch (port->direction) {
+	case PW_DIRECTION_INPUT:
+		port->rt.port.io = &impl->transport->inputs[port->port_id];
+		port->rt.mix_port.io = &impl->transport->inputs[port->port_id];
+		break;
+	case PW_DIRECTION_OUTPUT:
+		port->rt.port.io = &impl->transport->outputs[port->port_id];
+		port->rt.mix_port.io = &impl->transport->outputs[port->port_id];
+		break;
+	default:
+		break;
+	}
+}
+
+static void node_initialized(void *data)
+{
+	struct impl *impl = data;
+	struct pw_client_node *this = &impl->this;
+	struct pw_node *node = this->node;
+
+	if (this->resource == NULL)
+		return;
+
+	impl->fds[0] = eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK);
+	impl->fds[1] = eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK);
+	impl->proxy.data_source.fd = impl->fds[0];
+	impl->proxy.writefd = impl->fds[1];
+	impl->other_fds[0] = impl->fds[1];
+	impl->other_fds[1] = impl->fds[0];
+
+	spa_loop_add_source(impl->proxy.data_loop, &impl->proxy.data_source);
+	pw_log_debug("client-node %p: add data fd %d", node, impl->proxy.data_source.fd);
+
+	pw_client_node_resource_transport(this->resource, pw_global_get_id(pw_node_get_global(node)),
+					  impl->other_fds[0], impl->other_fds[1], impl->transport);
+}
+
 static void node_free(void *data)
 {
 	struct impl *impl = data;
@@ -1135,6 +1073,7 @@ static void node_free(void *data)
 static const struct pw_node_events node_events = {
 	PW_VERSION_NODE_EVENTS,
 	.free = node_free,
+	.port_init = node_port_init,
 	.initialized = node_initialized,
 };
 
