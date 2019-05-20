@@ -87,14 +87,14 @@ struct spa_monitor_callbacks {
 };
 
 /**
- * spa_monitor:
+ * spa_monitor_methods:
  *
- * The device monitor interface.
+ * The device monitor methods.
  */
-struct spa_monitor {
+struct spa_monitor_methods {
 	/* the version of this monitor. This can be used to expand this
 	 * structure in the future */
-#define SPA_VERSION_MONITOR	0
+#define SPA_VERSION_MONITOR_METHODS	0
 	uint32_t version;
 
 	/**
@@ -108,12 +108,21 @@ struct spa_monitor {
 	 * \return 0 on success
 	 *	   < 0 errno on error
 	 */
-	int (*set_callbacks) (struct spa_monitor *monitor,
+	int (*set_callbacks) (void *object,
 			      const struct spa_monitor_callbacks *callbacks,
 			      void *data);
 };
 
-#define spa_monitor_set_callbacks(m,...)	(m)->set_callbacks((m),__VA_ARGS__)
+static inline int spa_monitor_set_callbacks(struct spa_monitor *m,
+		const struct spa_monitor_callbacks *callbacks, void *data)
+{
+	int res = -ENOTSUP;
+	spa_callbacks_call_res((struct spa_callbacks*)m,
+			struct spa_monitor_methods, res, set_callbacks, 0,
+			callbacks, data);
+	return res;
+
+}
 
 #ifdef __cplusplus
 }  /* extern "C" */

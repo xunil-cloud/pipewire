@@ -33,6 +33,11 @@ extern "C" {
 
 #include <spa/utils/defs.h>
 
+/**
+ * The CPU features interface
+ */
+struct spa_cpu;
+
 /* x86 specific */
 #define SPA_CPU_FLAG_MMX		(1<<0)	/**< standard MMX */
 #define SPA_CPU_FLAG_MMXEXT		(1<<1)	/**< SSE integer or AMD MMX ext */
@@ -72,35 +77,40 @@ extern "C" {
 
 #define SPA_CPU_FORCE_AUTODETECT	((uint32_t)-1)
 /**
- * The CPU features interface
+ * methods
  */
-struct spa_cpu {
-	/** the version of this interface. This can be used to expand this
+struct spa_cpu_methods {
+	/** the version of the methods. This can be used to expand this
 	  structure in the future */
-#define SPA_VERSION_CPU	0
+#define SPA_VERSION_CPU_METHODS	0
 	uint32_t version;
-	/**
-	 * Extra information about the interface
-	 */
-	const struct spa_dict *info;
 
 	/** get CPU flags */
-	uint32_t (*get_flags) (struct spa_cpu *cpu);
+	uint32_t (*get_flags) (void *object);
 
 	/** force CPU flags, use SPA_CPU_FORCE_AUTODETECT to autodetect CPU flags */
-	int (*force_flags) (struct spa_cpu *cpu, uint32_t flags);
+	int (*force_flags) (void *object, uint32_t flags);
 
 	/** get number of CPU cores */
-	uint32_t (*get_count) (struct spa_cpu *cpu);
+	uint32_t (*get_count) (void *object);
 
 	/** get maximum required alignment of data */
-	uint32_t (*get_max_align) (struct spa_cpu *cpu);
+	uint32_t (*get_max_align) (void *object);
 };
 
-#define spa_cpu_get_flags(c)		(c)->get_flags((c))
-#define spa_cpu_force_flags(c,f)	(c)->force_flags((c), (f))
-#define spa_cpu_get_count(c)		(c)->get_count((c))
-#define spa_cpu_get_max_align(c)	(c)->get_max_align((c))
+#define spa_cpu_method(o,method,version,...)				\
+({									\
+	int _res = -ENOTSUP;						\
+	struct spa_cpu *_c = o;						\
+	spa_callbacks_call_res((struct spa_callbacks*)_c,		\
+			struct spa_cpu_methods, _res,			\
+			method, version, ##__VA_ARGS__);		\
+	_res;								\
+})
+#define spa_cpu_get_flags(c)		spa_cpu_method(c, get_flags, 0)
+#define spa_cpu_force_flags(c,f)	spa_cpu_method(c, force_flags, 0, f)
+#define spa_cpu_get_count(c)		spa_cpu_method(c, get_count, 0)
+#define spa_cpu_get_max_align(c)	spa_cpu_method(c, get_max_align, 0)
 
 #ifdef __cplusplus
 }  /* extern "C" */

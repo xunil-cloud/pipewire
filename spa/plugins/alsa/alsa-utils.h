@@ -73,7 +73,7 @@ struct buffer {
 
 struct state {
 	struct spa_handle handle;
-	struct spa_node node;
+	struct spa_callbacks node;
 
 	struct spa_log *log;
 	struct spa_loop *main_loop;

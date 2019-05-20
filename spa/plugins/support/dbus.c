@@ -41,7 +41,7 @@
 
 struct impl {
 	struct spa_handle handle;
-	struct spa_dbus dbus;
+	struct spa_callbacks dbus;
 
 	struct spa_log *log;
 	struct spa_loop_utils *utils;
@@ -280,10 +280,10 @@ static const struct spa_dbus_connection impl_connection = {
 };
 
 static struct spa_dbus_connection *
-impl_get_connection(struct spa_dbus *dbus,
+impl_get_connection(void *object,
 		    enum spa_dbus_type type)
 {
-        struct impl *impl = SPA_CONTAINER_OF(dbus, struct impl, dbus);
+        struct impl *impl = object;
 	struct connection *conn;
         DBusError error;
 
@@ -318,9 +318,9 @@ impl_get_connection(struct spa_dbus *dbus,
 	return NULL;
 }
 
-static const struct spa_dbus impl_dbus = {
-	SPA_VERSION_DBUS,
-	impl_get_connection,
+static const struct spa_dbus_methods impl_dbus = {
+	SPA_VERSION_DBUS_METHODS,
+	.get_connection = impl_get_connection,
 };
 
 static int impl_get_interface(struct spa_handle *handle, uint32_t type, void **interface)
@@ -372,7 +372,7 @@ impl_init(const struct spa_handle_factory *factory,
 	this = (struct impl *) handle;
 	spa_list_init(&this->connection_list);
 
-	this->dbus = impl_dbus;
+	this->dbus = SPA_CALLBACKS_INIT(&impl_dbus, this);
 
 	for (i = 0; i < n_support; i++) {
 		if (support[i].type == SPA_TYPE_INTERFACE_Log)
