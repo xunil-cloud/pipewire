@@ -70,14 +70,116 @@ struct pw_link_proxy;
 
 #define PW_VERSION_CORE				0
 
-#define PW_CORE_PROXY_METHOD_HELLO		0
-#define PW_CORE_PROXY_METHOD_SYNC		1
-#define PW_CORE_PROXY_METHOD_PONG		2
-#define PW_CORE_PROXY_METHOD_ERROR		3
-#define PW_CORE_PROXY_METHOD_GET_REGISTRY	4
-#define PW_CORE_PROXY_METHOD_CREATE_OBJECT	5
-#define PW_CORE_PROXY_METHOD_DESTROY		6
-#define PW_CORE_PROXY_METHOD_NUM		7
+#define PW_CORE_PROXY_EVENT_INFO	0
+#define PW_CORE_PROXY_EVENT_DONE	1
+#define PW_CORE_PROXY_EVENT_PING	2
+#define PW_CORE_PROXY_EVENT_ERROR	3
+#define PW_CORE_PROXY_EVENT_REMOVE_ID	4
+#define PW_CORE_PROXY_EVENT_NUM		5
+
+/** \struct pw_core_proxy_events
+ *  \brief Core events
+ *  \ingroup pw_core_interface The pw_core interface
+ */
+struct pw_core_proxy_events {
+#define PW_VERSION_CORE_PROXY_EVENTS	0
+	uint32_t version;
+
+	/**
+	 * Notify new core info
+	 *
+	 * This event is emited when first bound to the core or when the
+	 * hello method is called.
+	 *
+	 * \param info new core info
+	 */
+	void (*info) (void *object, const struct pw_core_info *info);
+	/**
+	 * Emit a done event
+	 *
+	 * The done event is emited as a result of a sync method with the
+	 * same seq number.
+	 *
+	 * \param seq the seq number passed to the sync method call
+	 */
+	void (*done) (void *object, uint32_t id, int seq);
+
+	/** Emit a ping event
+	 *
+	 * The client should reply with a pong reply with the same seq
+	 * number.
+	 */
+	void (*ping) (void *object, uint32_t id, int seq);
+
+	/**
+	 * Fatal error event
+         *
+         * The error event is sent out when a fatal (non-recoverable)
+         * error has occurred. The id argument is the proxy object where
+         * the error occurred, most often in response to a request to that
+         * object. The message is a brief description of the error,
+         * for (debugging) convenience.
+	 *
+	 * This event is usually also emited on the proxy object with
+	 * \a id.
+	 *
+         * \param id object where the error occurred
+         * \param seq the sequence number that generated the error
+         * \param res error code
+         * \param message error description
+	 */
+	void (*error) (void *object, uint32_t id, int seq, int res, const char *message);
+	/**
+	 * Remove an object ID
+         *
+         * This event is used internally by the object ID management
+         * logic. When a client deletes an object, the server will send
+         * this event to acknowledge that it has seen the delete request.
+         * When the client receives this event, it will know that it can
+         * safely reuse the object ID.
+	 *
+         * \param id deleted object ID
+	 */
+	void (*remove_id) (void *object, uint32_t id);
+};
+
+
+#define pw_core_resource_info(r,...)         pw_resource_notify(r,struct pw_core_proxy_events,info,__VA_ARGS__)
+#define pw_core_resource_done(r,...)         pw_resource_notify(r,struct pw_core_proxy_events,done,__VA_ARGS__)
+#define pw_core_resource_ping(r,...)         pw_resource_notify(r,struct pw_core_proxy_events,ping,__VA_ARGS__)
+#define pw_core_resource_error(r,...)        pw_resource_notify(r,struct pw_core_proxy_events,error,__VA_ARGS__)
+#define pw_core_resource_remove_id(r,...)    pw_resource_notify(r,struct pw_core_proxy_events,remove_id,__VA_ARGS__)
+
+static inline void
+pw_core_resource_errorv(struct pw_resource *resource, uint32_t id, int seq,
+		int res, const char *message, va_list args)
+{
+	char buffer[1024];
+	vsnprintf(buffer, sizeof(buffer), message, args);
+	buffer[1023] = '\0';
+	pw_core_resource_error(resource, id, seq, res, buffer);
+}
+
+static inline void
+pw_core_resource_errorf(struct pw_resource *resource, uint32_t id, int seq,
+		int res, const char *message, ...)
+{
+        va_list args;
+	va_start(args, message);
+	pw_core_resource_errorv(resource, id, seq, res, message, args);
+	va_end(args);
+}
+
+
+#define PW_CORE_PROXY_METHOD_ADD_LISTENER	0
+#define PW_CORE_PROXY_METHOD_HELLO		1
+#define PW_CORE_PROXY_METHOD_SYNC		2
+#define PW_CORE_PROXY_METHOD_PONG		3
+#define PW_CORE_PROXY_METHOD_ERROR		4
+#define PW_CORE_PROXY_METHOD_GET_REGISTRY	5
+#define PW_CORE_PROXY_METHOD_CREATE_OBJECT	6
+#define PW_CORE_PROXY_METHOD_DESTROY		7
+#define PW_CORE_PROXY_METHOD_NUM		8
 
 #define PW_LINK_OUTPUT_NODE_ID	"link.output_node.id"
 #define PW_LINK_OUTPUT_PORT_ID	"link.output_port.id"
@@ -95,6 +197,11 @@ struct pw_link_proxy;
 struct pw_core_proxy_methods {
 #define PW_VERSION_CORE_PROXY_METHODS	0
 	uint32_t version;
+
+	int (*add_listener) (void *object,
+			struct spa_hook *listener,
+			const struct pw_core_proxy_events *events,
+			void *data);
 	/**
 	 * Start a conversation with the server. This will send
 	 * the core info and will destroy all resources for the client
@@ -173,6 +280,16 @@ struct pw_core_proxy_methods {
 };
 
 static inline int
+pw_core_proxy_add_listener(struct pw_core_proxy *core,
+			   struct spa_hook *listener,
+			   const struct pw_core_proxy_events *events,
+			   void *data)
+{
+	return pw_proxy_do((struct pw_proxy*)core, struct pw_core_proxy_methods, add_listener,
+			listener, events, data);
+}
+
+static inline int
 pw_core_proxy_hello(struct pw_core_proxy *core, uint32_t version)
 {
 	return pw_proxy_do((struct pw_proxy*)core, struct pw_core_proxy_methods, hello, version);
@@ -246,115 +363,6 @@ static inline int
 pw_core_proxy_destroy(struct pw_core_proxy *core, struct pw_proxy *proxy)
 {
 	return pw_proxy_do((struct pw_proxy*)core, struct pw_core_proxy_methods, destroy, pw_proxy_get_id(proxy));
-}
-
-#define PW_CORE_PROXY_EVENT_INFO	0
-#define PW_CORE_PROXY_EVENT_DONE	1
-#define PW_CORE_PROXY_EVENT_PING	2
-#define PW_CORE_PROXY_EVENT_ERROR	3
-#define PW_CORE_PROXY_EVENT_REMOVE_ID	4
-#define PW_CORE_PROXY_EVENT_NUM		5
-
-/** \struct pw_core_proxy_events
- *  \brief Core events
- *  \ingroup pw_core_interface The pw_core interface
- */
-struct pw_core_proxy_events {
-#define PW_VERSION_CORE_PROXY_EVENTS	0
-	uint32_t version;
-
-	/**
-	 * Notify new core info
-	 *
-	 * This event is emited when first bound to the core or when the
-	 * hello method is called.
-	 *
-	 * \param info new core info
-	 */
-	void (*info) (void *object, const struct pw_core_info *info);
-	/**
-	 * Emit a done event
-	 *
-	 * The done event is emited as a result of a sync method with the
-	 * same seq number.
-	 *
-	 * \param seq the seq number passed to the sync method call
-	 */
-	void (*done) (void *object, uint32_t id, int seq);
-
-	/** Emit a ping event
-	 *
-	 * The client should reply with a pong reply with the same seq
-	 * number.
-	 */
-	void (*ping) (void *object, uint32_t id, int seq);
-
-	/**
-	 * Fatal error event
-         *
-         * The error event is sent out when a fatal (non-recoverable)
-         * error has occurred. The id argument is the proxy object where
-         * the error occurred, most often in response to a request to that
-         * object. The message is a brief description of the error,
-         * for (debugging) convenience.
-	 *
-	 * This event is usually also emited on the proxy object with
-	 * \a id.
-	 *
-         * \param id object where the error occurred
-         * \param seq the sequence number that generated the error
-         * \param res error code
-         * \param message error description
-	 */
-	void (*error) (void *object, uint32_t id, int seq, int res, const char *message);
-	/**
-	 * Remove an object ID
-         *
-         * This event is used internally by the object ID management
-         * logic. When a client deletes an object, the server will send
-         * this event to acknowledge that it has seen the delete request.
-         * When the client receives this event, it will know that it can
-         * safely reuse the object ID.
-	 *
-         * \param id deleted object ID
-	 */
-	void (*remove_id) (void *object, uint32_t id);
-};
-
-static inline void
-pw_core_proxy_add_listener(struct pw_core_proxy *core,
-			   struct spa_hook *listener,
-			   const struct pw_core_proxy_events *events,
-			   void *data)
-{
-	pw_proxy_add_proxy_listener((struct pw_proxy*)core, listener, events, data);
-}
-
-
-#define pw_core_resource_info(r,...)         pw_resource_notify(r,struct pw_core_proxy_events,info,__VA_ARGS__)
-#define pw_core_resource_done(r,...)         pw_resource_notify(r,struct pw_core_proxy_events,done,__VA_ARGS__)
-#define pw_core_resource_ping(r,...)         pw_resource_notify(r,struct pw_core_proxy_events,ping,__VA_ARGS__)
-#define pw_core_resource_error(r,...)        pw_resource_notify(r,struct pw_core_proxy_events,error,__VA_ARGS__)
-#define pw_core_resource_remove_id(r,...)    pw_resource_notify(r,struct pw_core_proxy_events,remove_id,__VA_ARGS__)
-
-static inline void
-pw_core_resource_errorv(struct pw_resource *resource, uint32_t id, int seq,
-		int res, const char *message, va_list args)
-{
-	char buffer[1024];
-	vsnprintf(buffer, sizeof(buffer), message, args);
-	buffer[1023] = '\0';
-	pw_core_resource_error(resource, id, seq, res, buffer);
-}
-
-static inline void
-pw_core_resource_errorf(struct pw_resource *resource, uint32_t id, int seq,
-		int res, const char *message, ...)
-{
-        va_list args;
-	va_start(args, message);
-	pw_core_resource_errorv(resource, id, seq, res, message, args);
-	va_end(args);
 }
 
 #define PW_VERSION_REGISTRY			0

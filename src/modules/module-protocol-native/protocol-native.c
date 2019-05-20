@@ -32,6 +32,16 @@
 
 #include "connection.h"
 
+static int core_method_marshal_add_listener(void *object,
+			struct spa_hook *listener,
+			const struct pw_core_proxy_events *events,
+			void *data)
+{
+	struct pw_proxy *proxy = object;
+	pw_proxy_add_proxy_listener(proxy, listener, events, data);
+	return 0;
+}
+
 static int core_method_marshal_hello(void *object, uint32_t version)
 {
 	struct pw_proxy *proxy = object;
@@ -1685,6 +1695,7 @@ static int registry_marshal_destroy(void *object, uint32_t id)
 
 static const struct pw_core_proxy_methods pw_protocol_native_core_method_marshal = {
 	PW_VERSION_CORE_PROXY_METHODS,
+	&core_method_marshal_add_listener,
 	&core_method_marshal_hello,
 	&core_method_marshal_sync,
 	&core_method_marshal_pong,
@@ -1695,6 +1706,7 @@ static const struct pw_core_proxy_methods pw_protocol_native_core_method_marshal
 };
 
 static const struct pw_protocol_native_demarshal pw_protocol_native_core_method_demarshal[PW_CORE_PROXY_METHOD_NUM] = {
+	{ NULL, 0, },
 	{ &core_method_demarshal_hello, 0, },
 	{ &core_method_demarshal_sync, 0, },
 	{ &core_method_demarshal_pong, 0, },
