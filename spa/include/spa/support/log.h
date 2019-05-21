@@ -44,7 +44,7 @@ enum spa_log_level {
 };
 
 /**
- * The Log interface
+ * The Log object
  */
 struct spa_log {
 	/** methods and object */
