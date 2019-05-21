@@ -47,6 +47,8 @@
 
 #define MAX_BUFFERS     64
 
+#define pw_link_resource_info(r,...)      pw_resource_notify(r,struct pw_link_proxy_events,info,0,__VA_ARGS__)
+
 /** \cond */
 struct impl {
 	struct pw_link this;

@@ -38,6 +38,10 @@ struct impl {
 	struct pw_array permissions;
 };
 
+#define pw_client_resource(r,m,v,...)	pw_resource_notify(r,struct pw_client_proxy_events,m,v,__VA_ARGS__)
+#define pw_client_resource_info(r,...)		pw_client_resource(r,info,0,__VA_ARGS__)
+#define pw_client_resource_permissions(r,...)	pw_client_resource(r,permissions,0,__VA_ARGS__)
+
 struct resource_data {
 	struct spa_hook resource_listener;
 	struct pw_client *client;

@@ -36,6 +36,10 @@ struct impl {
 	struct pw_device this;
 };
 
+#define pw_device_resource(r,m,v,...)	pw_resource_notify(r,struct pw_device_proxy_events,m,v,__VA_ARGS__)
+#define pw_device_resource_info(r,...)	pw_device_resource(r,info,0,__VA_ARGS__)
+#define pw_device_resource_param(r,...) pw_device_resource(r,param,0,__VA_ARGS__)
+
 struct resource_data {
 	struct spa_hook resource_listener;
 	struct pw_device *device;

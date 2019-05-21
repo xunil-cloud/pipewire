@@ -78,6 +78,8 @@ struct pw_proxy *pw_proxy_new(struct pw_proxy *factory,
 
 	this->marshal = pw_protocol_get_marshal(remote->conn->protocol, type);
 
+	this->impl = SPA_CALLBACKS_INIT(this->marshal->method_marshal, this);
+
 	spa_list_append(&this->remote->proxy_list, &this->link);
 
 	pw_log_debug("proxy %p: new %u %s remote %p, marshal %p",

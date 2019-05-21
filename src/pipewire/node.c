@@ -54,6 +54,10 @@ struct impl {
 	unsigned int pause_on_idle:1;
 };
 
+#define pw_node_resource(r,m,v,...)	pw_resource_notify(r,struct pw_node_proxy_events,m,v,__VA_ARGS__)
+#define pw_node_resource_info(r,...)	pw_node_resource(r,info,0,__VA_ARGS__)
+#define pw_node_resource_param(r,...)	pw_node_resource(r,param,0,__VA_ARGS__)
+
 struct resource_data {
 	struct spa_hook resource_listener;
 	struct pw_node *node;

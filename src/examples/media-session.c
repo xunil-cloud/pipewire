@@ -1299,7 +1299,7 @@ static void do_rescan(struct impl *impl)
 static void core_done(void *data, uint32_t id, int seq)
 {
 	struct impl *impl = data;
-	pw_log_debug("media-session %p: sync %d %d/%d", impl, id, seq, impl->seq);
+	pw_log_debug("media-session %p: sync %u %d/%d", impl, id, seq, impl->seq);
 	if (impl->seq == seq)
 		do_rescan(impl);
 }

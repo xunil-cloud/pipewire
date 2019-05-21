@@ -173,6 +173,33 @@ struct impl {
 	int other_fds[2];
 };
 
+#define pw_client_node_resource(r,m,v,...)	\
+	pw_resource_notify_res(r,struct pw_client_node_proxy_events,m,v,__VA_ARGS__)
+
+#define pw_client_node_resource_add_mem(r,...)	\
+	pw_client_node_resource(r,add_mem,0,__VA_ARGS__)
+#define pw_client_node_resource_transport(r,...)	\
+	pw_client_node_resource(r,transport,0,__VA_ARGS__)
+#define pw_client_node_resource_set_param(r,...)	\
+	pw_client_node_resource(r,set_param,0,__VA_ARGS__)
+#define pw_client_node_resource_set_io(r,...)	\
+	pw_client_node_resource(r,set_io,0,__VA_ARGS__)
+#define pw_client_node_resource_event(r,...)	\
+	pw_client_node_resource(r,event,0,__VA_ARGS__)
+#define pw_client_node_resource_command(r,...)	\
+	pw_client_node_resource(r,command,0,__VA_ARGS__)
+#define pw_client_node_resource_add_port(r,...)	\
+	pw_client_node_resource(r,add_port,0,__VA_ARGS__)
+#define pw_client_node_resource_remove_port(r,...)	\
+	pw_client_node_resource(r,remove_port,0,__VA_ARGS__)
+#define pw_client_node_resource_port_set_param(r,...)	\
+	pw_client_node_resource(r,port_set_param,0,__VA_ARGS__)
+#define pw_client_node_resource_port_use_buffers(r,...)	\
+	pw_client_node_resource(r,port_use_buffers,0,__VA_ARGS__)
+#define pw_client_node_resource_port_set_io(r,...)	\
+	pw_client_node_resource(r,port_set_io,0,__VA_ARGS__)
+#define pw_client_node_resource_set_activation(r,...)	\
+	pw_client_node_resource(r,set_activation,0,__VA_ARGS__)
 static int
 do_port_use_buffers(struct impl *impl,
 		    enum spa_direction direction,
@@ -965,18 +992,22 @@ static int impl_node_process(void *object)
 	return SPA_STATUS_OK;
 }
 
-static int
+static struct pw_node_proxy *
 client_node_get_node(void *data,
 		   uint32_t version,
-		   uint32_t new_id)
+		   size_t user_data_size)
 {
 	struct impl *impl = data;
 	struct node *this = &impl->node;
+	uint32_t new_id = user_data_size;
+
 	pw_log_debug("node %p: bind %u/%u", this, new_id, version);
+
 	impl->bind_node_version = version;
 	impl->bind_node_id = new_id;
 	pw_map_insert_at(&this->resource->client->objects, new_id, NULL);
-	return 0;
+
+	return NULL;
 }
 
 static int

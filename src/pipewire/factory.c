@@ -31,6 +31,8 @@
 #include "pipewire/type.h"
 #include "pipewire/interfaces.h"
 
+#define pw_factory_resource_info(r,...) pw_resource_notify(r,struct pw_factory_proxy_events,info,0,__VA_ARGS__)
+
 struct resource_data {
 	struct spa_hook resource_listener;
 };

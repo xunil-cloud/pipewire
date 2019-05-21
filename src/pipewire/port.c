@@ -42,6 +42,10 @@ struct impl {
 	struct spa_callbacks mix_node;	/**< mix node implementation */
 };
 
+#define pw_port_resource(r,m,v,...)	pw_resource_notify(r,struct pw_port_proxy_events,m,v,__VA_ARGS__)
+#define pw_port_resource_info(r,...)	pw_port_resource(r,info,0,__VA_ARGS__)
+#define pw_port_resource_param(r,...)	pw_port_resource(r,param,0,__VA_ARGS__)
+
 struct resource_data {
 	struct spa_hook resource_listener;
 	struct pw_port *port;
