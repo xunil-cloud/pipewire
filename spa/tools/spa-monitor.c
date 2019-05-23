@@ -42,7 +42,7 @@ static SPA_LOG_IMPL(default_log);
 
 struct data {
 	struct spa_log *log;
-	struct spa_callbacks main_loop;
+	struct spa_loop main_loop;
 
 	struct spa_support support[3];
 	uint32_t n_support;
@@ -157,7 +157,10 @@ int main(int argc, char *argv[])
 	uint32_t fidx;
 
 	data.log = &default_log.log;
-	data.main_loop = SPA_CALLBACKS_INIT(&impl_loop, &data);
+	data.main_loop.iface = SPA_INTERFACE_INIT(
+			SPA_TYPE_INTERFACE_Loop,
+			SPA_VERSION_LOOP,
+			&impl_loop, &data);
 
 	data.support[1] = SPA_SUPPORT_INIT(SPA_TYPE_INTERFACE_Log, data.log);
 	data.support[2] = SPA_SUPPORT_INIT(SPA_TYPE_INTERFACE_MainLoop, &data.main_loop);

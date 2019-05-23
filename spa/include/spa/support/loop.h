@@ -29,14 +29,17 @@
 extern "C" {
 #endif
 
-struct spa_loop;
-struct spa_loop_control;
-struct spa_loop_utils;
-struct spa_source;
-
 #include <spa/utils/defs.h>
 #include <spa/utils/hook.h>
 #include <spa/utils/result.h>
+
+#define SPA_VERSION_LOOP		0
+struct spa_loop { struct spa_interface iface; };
+#define SPA_VERSION_LOOP_CONTROL	0
+struct spa_loop_control { struct spa_interface iface; };
+#define SPA_VERSION_LOOP_UTILS		0
+struct spa_loop_utils { struct spa_interface iface; };
+struct spa_source;
 
 enum spa_io {
 	SPA_IO_IN = (1 << 0),
@@ -98,7 +101,7 @@ struct spa_loop_methods {
 ({									\
 	int _res = -ENOTSUP;						\
 	struct spa_loop *_o = o;					\
-	spa_callbacks_call_res((struct spa_callbacks*)_o,		\
+	spa_interface_call_res(&_o->iface,				\
 			struct spa_loop_methods, _res,			\
 			method, version, ##__VA_ARGS__);		\
 	_res;								\
@@ -178,7 +181,7 @@ struct spa_loop_control_methods {
 #define spa_loop_control_method_v(o,method,version,...)			\
 ({									\
 	struct spa_loop_control *_o = o;				\
-	spa_callbacks_call((struct spa_callbacks*)_o,			\
+	spa_interface_call(&_o->iface,					\
 			struct spa_loop_control_methods,		\
 			method, version, ##__VA_ARGS__);		\
 })
@@ -187,7 +190,7 @@ struct spa_loop_control_methods {
 ({									\
 	int _res = -ENOTSUP;						\
 	struct spa_loop_control *_o = o;				\
-	spa_callbacks_call_res((struct spa_callbacks*)_o,		\
+	spa_interface_call_res(&_o->iface,				\
 			struct spa_loop_control_methods, _res,		\
 			method, version, ##__VA_ARGS__);		\
 	_res;								\
@@ -252,7 +255,7 @@ struct spa_loop_utils_methods {
 #define spa_loop_utils_method_v(o,method,version,...)			\
 ({									\
 	struct spa_loop_utils *_o = o;					\
-	spa_callbacks_call((struct spa_callbacks*)_o,			\
+	spa_interface_call(&_o->iface,					\
 			struct spa_loop_utils_methods,			\
 			method, version, ##__VA_ARGS__);		\
 })
@@ -261,7 +264,7 @@ struct spa_loop_utils_methods {
 ({									\
 	int _res = -ENOTSUP;						\
 	struct spa_loop_utils *_o = o;					\
-	spa_callbacks_call_res((struct spa_callbacks*)_o,		\
+	spa_interface_call_res(&_o->iface,				\
 			struct spa_loop_utils_methods, _res,		\
 			method, version, ##__VA_ARGS__);		\
 	_res;								\
@@ -270,7 +273,7 @@ struct spa_loop_utils_methods {
 ({									\
 	struct spa_source *_res = NULL;					\
 	struct spa_loop_utils *_o = o;					\
-	spa_callbacks_call_res((struct spa_callbacks*)_o,		\
+	spa_interface_call_res(&_o->iface,				\
 			struct spa_loop_utils_methods, _res,		\
 			method, version, ##__VA_ARGS__);		\
 	_res;								\

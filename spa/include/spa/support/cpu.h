@@ -32,11 +32,13 @@ extern "C" {
 #include <stdarg.h>
 
 #include <spa/utils/defs.h>
+#include <spa/utils/hook.h>
 
 /**
  * The CPU features interface
  */
-struct spa_cpu;
+#define SPA_VERSION_CPU	0
+struct spa_cpu { struct spa_interface iface; };
 
 /* x86 specific */
 #define SPA_CPU_FLAG_MMX		(1<<0)	/**< standard MMX */
@@ -102,7 +104,7 @@ struct spa_cpu_methods {
 ({									\
 	int _res = -ENOTSUP;						\
 	struct spa_cpu *_c = o;						\
-	spa_callbacks_call_res((struct spa_callbacks*)_c,		\
+	spa_interface_call_res(&_c->iface,				\
 			struct spa_cpu_methods, _res,			\
 			method, version, ##__VA_ARGS__);		\
 	_res;								\

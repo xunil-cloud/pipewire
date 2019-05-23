@@ -92,7 +92,7 @@ struct port {
 
 struct impl {
 	struct spa_handle handle;
-	struct spa_callbacks node;
+	struct spa_node node;
 
 	struct spa_log *log;
 
@@ -917,7 +917,10 @@ impl_init(const struct spa_handle_factory *factory,
 
 	spa_hook_list_init(&this->hooks);
 
-	this->node = SPA_CALLBACKS_INIT(&impl_node, this);
+	this->node.iface = SPA_INTERFACE_INIT(
+			SPA_TYPE_INTERFACE_Node,
+			SPA_VERSION_NODE,
+			&impl_node, this);
 	this->info = SPA_NODE_INFO_INIT();
 	this->info.max_input_ports = MAX_PORTS;
 	this->info.max_output_ports = 1;

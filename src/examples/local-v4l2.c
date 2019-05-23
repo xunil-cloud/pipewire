@@ -56,7 +56,7 @@ struct data {
 
 	struct pw_link *link;
 
-	struct spa_callbacks impl_node;
+	struct spa_node impl_node;
 	struct spa_io_buffers *io;
 
 	struct spa_hook_list hooks;
@@ -338,8 +338,11 @@ static void make_nodes(struct data *data)
 	struct pw_properties *props;
 
 	data->node = pw_node_new(data->core, "SDL-sink", NULL, 0);
-	data->impl_node = SPA_CALLBACKS_INIT(&impl_node, data);
-	pw_node_set_implementation(data->node, (struct spa_node *)&data->impl_node);
+	data->impl_node.iface = SPA_INTERFACE_INIT(
+			SPA_TYPE_INTERFACE_Node,
+			SPA_VERSION_NODE,
+			&impl_node, data);
+	pw_node_set_implementation(data->node, &data->impl_node);
 
 	pw_node_register(data->node, NULL, NULL, NULL);
 
@@ -349,7 +352,7 @@ static void make_nodes(struct data *data)
 	data->v4l2 = pw_factory_create_object(factory,
 					      NULL,
 					      PW_TYPE_INTERFACE_Node,
-					      PW_VERSION_NODE,
+					      PW_VERSION_NODE_PROXY,
 					      props,
 					      SPA_ID_INVALID);
 	data->link = pw_link_new(data->core,

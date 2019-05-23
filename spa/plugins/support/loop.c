@@ -63,9 +63,9 @@ static void loop_signal_event(void *object, struct spa_source *source);
 
 struct impl {
 	struct spa_handle handle;
-	struct spa_callbacks loop;
-	struct spa_callbacks control;
-	struct spa_callbacks utils;
+	struct spa_loop loop;
+	struct spa_loop_control control;
+	struct spa_loop_utils utils;
 
         struct spa_log *log;
 
@@ -726,9 +726,18 @@ impl_init(const struct spa_handle_factory *factory,
 	handle->clear = impl_clear;
 
 	impl = (struct impl *) handle;
-	impl->loop = SPA_CALLBACKS_INIT(&impl_loop, impl);
-	impl->control = SPA_CALLBACKS_INIT(&impl_loop_control, impl);
-	impl->utils = SPA_CALLBACKS_INIT(&impl_loop_utils, impl);
+	impl->loop.iface = SPA_INTERFACE_INIT(
+			SPA_TYPE_INTERFACE_Loop,
+			SPA_VERSION_LOOP,
+			&impl_loop, impl);
+	impl->control.iface = SPA_INTERFACE_INIT(
+			SPA_TYPE_INTERFACE_LoopControl,
+			SPA_VERSION_LOOP_CONTROL,
+			&impl_loop_control, impl);
+	impl->utils.iface = SPA_INTERFACE_INIT(
+			SPA_TYPE_INTERFACE_LoopUtils,
+			SPA_VERSION_LOOP_UTILS,
+			&impl_loop_utils, impl);
 
 	for (i = 0; i < n_support; i++) {
 		if (support[i].type == SPA_TYPE_INTERFACE_Log)

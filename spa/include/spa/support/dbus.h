@@ -31,7 +31,8 @@ extern "C" {
 
 #include <spa/support/loop.h>
 
-struct spa_dbus;
+#define SPA_VERSION_DBUS	0
+struct spa_dbus { struct spa_interface iface; };
 
 enum spa_dbus_type {
 	SPA_DBUS_TYPE_SESSION,	/**< The login session bus */
@@ -84,7 +85,7 @@ static inline struct spa_dbus_connection *
 spa_dbus_get_connection(struct spa_dbus *dbus, enum spa_dbus_type type)
 {
 	struct spa_dbus_connection *res = NULL;
-	spa_callbacks_call_res((struct spa_callbacks*)dbus,
+	spa_interface_call_res(&dbus->iface,
                         struct spa_dbus_methods, res,
 			get_connection, 0, type);
 	return res;

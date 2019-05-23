@@ -517,7 +517,7 @@ struct pw_core *pw_core_new(struct pw_loop *main_loop,
 
 	this->global = pw_global_new(this,
 				     PW_TYPE_INTERFACE_Core,
-				     PW_VERSION_CORE,
+				     PW_VERSION_CORE_PROXY,
 				     pw_properties_new(
 					     PW_CORE_PROP_USER_NAME, this->info.user_name,
 					     PW_CORE_PROP_HOST_NAME, this->info.host_name,

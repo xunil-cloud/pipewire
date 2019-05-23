@@ -39,7 +39,7 @@
 /** \cond */
 struct impl {
 	struct pw_port this;
-	struct spa_callbacks mix_node;	/**< mix node implementation */
+	struct spa_node mix_node;	/**< mix node implementation */
 };
 
 #define pw_port_resource(r,m,v,...)	pw_resource_notify(r,struct pw_port_proxy_events,m,v,__VA_ARGS__)
@@ -333,6 +333,7 @@ struct pw_port *pw_port_new(enum pw_direction direction,
 	struct impl *impl;
 	struct pw_port *this;
 	struct pw_properties *properties;
+	const struct spa_node_methods *mix_methods;
 
 	impl = calloc(1, sizeof(struct impl) + user_data_size);
 	if (impl == NULL)
@@ -379,9 +380,14 @@ struct pw_port *pw_port_new(enum pw_direction direction,
 	spa_hook_list_init(&this->listener_list);
 
 	if (this->direction == PW_DIRECTION_INPUT)
-		impl->mix_node = SPA_CALLBACKS_INIT(&schedule_mix_node, impl);
+		mix_methods = &schedule_mix_node;
 	else
-		impl->mix_node = SPA_CALLBACKS_INIT(&schedule_tee_node, impl);
+		mix_methods = &schedule_tee_node;
+
+	impl->mix_node.iface = SPA_INTERFACE_INIT(
+			SPA_TYPE_INTERFACE_Node,
+			SPA_VERSION_NODE,
+			mix_methods, impl);
 
 	pw_port_set_mix(this, NULL, 0);
 
@@ -632,7 +638,8 @@ int pw_port_register(struct pw_port *port,
 	struct pw_core *core = node->core;
 
 	port->global = pw_global_new(core,
-				PW_TYPE_INTERFACE_Port, PW_VERSION_PORT,
+				PW_TYPE_INTERFACE_Port,
+				PW_VERSION_PORT_PROXY,
 				properties,
 				global_bind,
 				port);

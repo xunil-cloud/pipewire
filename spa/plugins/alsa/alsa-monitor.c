@@ -47,7 +47,7 @@ extern const struct spa_handle_factory spa_alsa_device_factory;
 
 struct impl {
 	struct spa_handle handle;
-	struct spa_callbacks monitor;
+	struct spa_monitor monitor;
 
 	struct spa_log *log;
 	struct spa_loop *main_loop;
@@ -460,7 +460,10 @@ impl_init(const struct spa_handle_factory *factory,
 		return -EINVAL;
 	}
 
-	this->monitor = SPA_CALLBACKS_INIT(&impl_monitor, this);
+	this->monitor.iface = SPA_INTERFACE_INIT(
+			SPA_TYPE_INTERFACE_Monitor,
+			SPA_VERSION_MONITOR,
+			&impl_monitor, this);
 
 	return 0;
 }

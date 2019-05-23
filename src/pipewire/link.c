@@ -1421,7 +1421,8 @@ int pw_link_register(struct pw_link *link,
 	link->registered = true;
 
 	link->global = pw_global_new(core,
-				     PW_TYPE_INTERFACE_Link, PW_VERSION_LINK,
+				     PW_TYPE_INTERFACE_Link,
+				     PW_VERSION_LINK_PROXY,
 				     properties,
 				     global_bind,
 				     link);

@@ -32,7 +32,7 @@ extern "C" {
 #include <spa/utils/defs.h>
 #include <spa/param/param.h>
 
-struct pw_client_node_proxy;
+struct pw_client_node_proxy { struct spa_interface iface; };
 
 #define PW_VERSION_CLIENT_NODE			0
 
@@ -292,7 +292,7 @@ struct pw_client_node_proxy_methods {
 ({									\
 	int _res = -ENOTSUP;						\
 	struct pw_client_node_proxy *_p = o;				\
-	spa_callbacks_call_res((struct spa_callbacks*)_p,		\
+	spa_interface_call_res(&_p->iface,				\
 			struct pw_client_node_proxy_methods, _res,	\
 			method, version, ##__VA_ARGS__);		\
 	_res;								\
@@ -304,7 +304,7 @@ static inline struct pw_node_proxy *
 pw_client_node_proxy_get_node(struct pw_client_node_proxy *p, uint32_t version, size_t user_data_size)
 {
 	struct pw_node_proxy *res = NULL;
-	spa_callbacks_call_res((struct spa_callbacks*)p,
+	spa_interface_call_res(&p->iface,
 			struct pw_client_node_proxy_methods, res,
 			get_node, 0, version, user_data_size);
 	return res;

@@ -625,7 +625,7 @@ struct pw_link {
 #define pw_resource_emit_error(o,s,r,m)	pw_resource_emit(o, error, 0, s, r, m)
 
 struct pw_resource {
-	struct spa_callbacks impl;	/**< event implementation */
+	struct spa_interface impl;	/**< event implementation */
 	struct pw_core *core;		/**< the core object */
 	struct spa_list link;		/**< link in object resource_list */
 
@@ -654,7 +654,7 @@ struct pw_resource {
 #define pw_proxy_emit_error(p,s,r,m)	pw_proxy_emit(p, error, 0, s, r, m)
 
 struct pw_proxy {
-	struct spa_callbacks impl;	/**< method implementation */
+	struct spa_interface impl;	/**< method implementation */
 	struct pw_remote *remote;	/**< the owner remote of this proxy */
 	struct spa_list link;		/**< link in the remote */
 

@@ -44,15 +44,13 @@ enum spa_log_level {
 };
 
 /**
- * The Log object
+ * The Log interface
  */
 struct spa_log {
-	/** methods and object */
-	struct spa_callbacks cb;
 	/** the version of this log. This can be used to expand this
 	 * structure in the future */
 #define SPA_VERSION_LOG	0
-	uint32_t version;
+	struct spa_interface iface;
 	/**
 	 * Logging level, everything above this level is not logged
 	 */
@@ -109,7 +107,7 @@ struct spa_log_methods {
 ({								\
 	struct spa_log *_l = l;					\
 	if (SPA_UNLIKELY (spa_log_level_enabled(_l, lev)))	\
-		spa_callbacks_call(&_l->cb,			\
+		spa_interface_call(&_l->iface,			\
 			struct spa_log_methods, log, 0, lev,	\
 			__VA_ARGS__);				\
 })
@@ -118,7 +116,7 @@ struct spa_log_methods {
 ({								\
 	struct spa_log *_l = l;					\
 	if (SPA_UNLIKELY (spa_log_level_enabled(_l, lev)))	\
-		spa_callbacks_call(&_l->cb,			\
+		spa_interface_call(&_l->iface,			\
 			struct spa_log_methods, logv, 0, lev,	\
 			__VA_ARGS__);				\
 })
@@ -143,7 +141,7 @@ static inline void spa_log_##name (struct spa_log *l, const char *format, ...)  
 	if (SPA_UNLIKELY (spa_log_level_enabled (l, lev))) {			\
 		va_list varargs;						\
 		va_start (varargs, format);					\
-		spa_callbacks_call(&l->cb,					\
+		spa_interface_call(&l->iface,					\
 			struct spa_log_methods, logv, 0, lev,			\
 			__FILE__,__LINE__,__func__,format,varargs);		\
 		va_end (varargs);						\

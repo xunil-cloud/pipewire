@@ -41,7 +41,7 @@
 
 struct impl {
 	struct spa_handle handle;
-	struct spa_callbacks dbus;
+	struct spa_dbus dbus;
 
 	struct spa_log *log;
 	struct spa_loop_utils *utils;
@@ -372,7 +372,10 @@ impl_init(const struct spa_handle_factory *factory,
 	this = (struct impl *) handle;
 	spa_list_init(&this->connection_list);
 
-	this->dbus = SPA_CALLBACKS_INIT(&impl_dbus, this);
+	this->dbus.iface = SPA_INTERFACE_INIT(
+			SPA_TYPE_INTERFACE_DBus,
+			SPA_VERSION_DBUS,
+			&impl_dbus, this);
 
 	for (i = 0; i < n_support; i++) {
 		if (support[i].type == SPA_TYPE_INTERFACE_Log)

@@ -63,7 +63,7 @@ struct buffer {
 
 struct data {
 	struct spa_log *log;
-	struct spa_callbacks data_loop;
+	struct spa_loop data_loop;
 
 	struct spa_support support[4];
 	uint32_t n_support;
@@ -502,7 +502,8 @@ int main(int argc, char *argv[])
 	spa_graph_init(&data.graph, &data.graph_state);
 
 	data.log = &default_log.log;
-	data.data_loop = SPA_CALLBACKS_INIT(&impl_loop, &data);
+	data.data_loop.iface = SPA_INTERFACE_INIT(
+			SPA_TYPE_INTERFACE_Loop, SPA_VERSION_LOOP, &impl_loop, &data);
 
 	if ((str = getenv("SPA_DEBUG")))
 		data.log->level = atoi(str);

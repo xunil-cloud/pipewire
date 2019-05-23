@@ -76,7 +76,10 @@ struct pw_resource *pw_resource_new(struct pw_client *client,
 
 	this->marshal = pw_protocol_get_marshal(client->protocol, type);
 
-	this->impl = SPA_CALLBACKS_INIT(this->marshal->event_marshal, this);
+	this->impl = SPA_INTERFACE_INIT(
+			type,
+			this->marshal->version,
+			this->marshal->event_marshal, this);
 
 	pw_log_debug("resource %p: new %u %s/%d client %p marshal %p",
 			this, id,

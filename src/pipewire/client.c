@@ -324,7 +324,8 @@ int pw_client_register(struct pw_client *client,
 	client->registered = true;
 
 	client->global = pw_global_new(core,
-				       PW_TYPE_INTERFACE_Client, PW_VERSION_CLIENT,
+				       PW_TYPE_INTERFACE_Client,
+				       PW_VERSION_CLIENT_PROXY,
 				       properties,
 				       global_bind,
 				       client);

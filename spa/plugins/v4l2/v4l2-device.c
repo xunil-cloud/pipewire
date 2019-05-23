@@ -57,7 +57,7 @@ static void reset_props(struct props *props)
 
 struct impl {
 	struct spa_handle handle;
-	struct spa_callbacks device;
+	struct spa_device device;
 
 	struct spa_log *log;
 	struct spa_loop *main_loop;
@@ -217,7 +217,10 @@ impl_init(const struct spa_handle_factory *factory,
 
 	spa_hook_list_init(&this->hooks);
 
-	this->device = SPA_CALLBACKS_INIT(&impl_device, this);
+	this->device.iface = SPA_INTERFACE_INIT(
+			SPA_TYPE_INTERFACE_Device,
+			SPA_VERSION_DEVICE,
+			&impl_device, this);
 	this->dev.log = this->log;
 	this->dev.fd = -1;
 

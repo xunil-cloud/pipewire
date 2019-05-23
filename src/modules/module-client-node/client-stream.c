@@ -61,7 +61,7 @@
 /** \cond */
 
 struct node {
-	struct spa_callbacks node;
+	struct spa_node node;
 
 	struct impl *impl;
 
@@ -907,7 +907,10 @@ node_init(struct node *this,
 		if (support[i].type == SPA_TYPE_INTERFACE_Log)
 			this->log = support[i].data;
 	}
-	this->node = SPA_CALLBACKS_INIT(&impl_node, this);
+	this->node.iface = SPA_INTERFACE_INIT(
+			SPA_TYPE_INTERFACE_Node,
+			SPA_VERSION_NODE,
+			&impl_node, this);
 	spa_hook_list_init(&this->hooks);
 
 	this->info_all = SPA_NODE_CHANGE_MASK_PARAMS;

@@ -69,8 +69,8 @@ struct {					\
 } name
 
 #define SPA_LOG_IMPL_INIT(name)				\
-	{ { SPA_CALLBACKS_INIT(&name.methods, &name),	\
-	    SPA_VERSION_LOG,				\
+	{ { { SPA_TYPE_INTERFACE_Log, SPA_VERSION_LOG,	\
+	      SPA_CALLBACKS_INIT(&name.methods, &name) },	\
 	    SPA_LOG_LEVEL_INFO,	},			\
 	  { SPA_VERSION_LOG_METHODS,			\
 	    spa_log_impl_log,				\

@@ -215,8 +215,10 @@ impl_init(const struct spa_handle_factory *factory,
 
 	this = (struct impl *) handle;
 
-	this->log.cb = SPA_CALLBACKS_INIT(&impl_log, this);
-	this->log.version = SPA_VERSION_LOG;
+	this->log.iface = SPA_INTERFACE_INIT(
+			SPA_TYPE_INTERFACE_Log,
+			SPA_VERSION_LOG,
+			&impl_log, this);
 	this->log.level = DEFAULT_LOG_LEVEL;
 
 	for (i = 0; i < n_support; i++) {

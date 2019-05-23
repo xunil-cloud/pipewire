@@ -707,7 +707,11 @@ impl_init(const struct spa_handle_factory *factory,
 		return -EINVAL;
 	}
 
-	this->node = SPA_CALLBACKS_INIT(&impl_node, this);
+	this->node.iface = SPA_INTERFACE_INIT(
+			SPA_TYPE_INTERFACE_Node,
+			SPA_VERSION_NODE,
+			&impl_node, this);
+
 	spa_hook_list_init(&this->hooks);
 
 	this->stream = SND_PCM_STREAM_PLAYBACK;

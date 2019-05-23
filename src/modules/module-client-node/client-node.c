@@ -107,7 +107,7 @@ struct port {
 	enum spa_direction direction;
 	uint32_t id;
 
-	struct spa_callbacks mix_node;
+	struct spa_node mix_node;
 
 	struct spa_port_info info;
 	struct pw_properties *properties;
@@ -121,7 +121,7 @@ struct port {
 };
 
 struct node {
-	struct spa_callbacks node;
+	struct spa_node node;
 
 	struct impl *impl;
 
@@ -1171,7 +1171,10 @@ node_init(struct node *this,
 		return -EINVAL;
 	}
 
-	this->node = SPA_CALLBACKS_INIT(&impl_node, this);
+	this->node.iface = SPA_INTERFACE_INIT(
+			SPA_TYPE_INTERFACE_Node,
+			SPA_VERSION_NODE,
+			&impl_node, this);
 	spa_hook_list_init(&this->hooks);
 	spa_list_init(&this->pending_list);
 
@@ -1514,7 +1517,10 @@ static void node_port_init(void *data, struct pw_port *port)
 	p->direction = port->direction;
 	p->id = port->port_id;
 	p->impl = impl;
-	p->mix_node = SPA_CALLBACKS_INIT(&impl_port_mix, p);
+	p->mix_node.iface = SPA_INTERFACE_INIT(
+			SPA_TYPE_INTERFACE_Node,
+			SPA_VERSION_NODE,
+			&impl_port_mix, p);
 	mix_init(&p->mix[MAX_MIX], p, SPA_ID_INVALID);
 
 	if (p->direction == SPA_DIRECTION_INPUT) {

@@ -295,7 +295,7 @@ int pw_device_register(struct pw_device *device,
 	device->registered = true;
 
         device->global = pw_global_new(core,
-				       PW_TYPE_INTERFACE_Device, PW_VERSION_DEVICE,
+				       PW_TYPE_INTERFACE_Device, PW_VERSION_DEVICE_PROXY,
 				       properties,
 				       global_bind,
 				       device);

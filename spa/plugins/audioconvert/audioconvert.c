@@ -64,7 +64,7 @@ struct link {
 
 struct impl {
 	struct spa_handle handle;
-	struct spa_callbacks node;
+	struct spa_node node;
 
 	struct spa_log *log;
 
@@ -1024,7 +1024,10 @@ impl_init(const struct spa_handle_factory *factory,
 		if (support[i].type == SPA_TYPE_INTERFACE_Log)
 			this->log = support[i].data;
 	}
-	this->node = SPA_CALLBACKS_INIT(&impl_node, this);
+	this->node.iface = SPA_INTERFACE_INIT(
+			SPA_TYPE_INTERFACE_Node,
+			SPA_VERSION_NODE,
+			&impl_node, this);
 	spa_hook_list_init(&this->hooks);
 
 	if (info == NULL || (str = spa_dict_lookup(info, "factory.mode")) == NULL)

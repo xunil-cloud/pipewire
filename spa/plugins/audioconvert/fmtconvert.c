@@ -100,7 +100,7 @@ struct port {
 
 struct impl {
 	struct spa_handle handle;
-	struct spa_callbacks node;
+	struct spa_node node;
 
 	struct spa_log *log;
 	struct spa_cpu *cpu;
@@ -980,7 +980,10 @@ impl_init(const struct spa_handle_factory *factory,
 			break;
 		}
 	}
-	this->node = SPA_CALLBACKS_INIT(&impl_node, this);
+	this->node.iface = SPA_INTERFACE_INIT(
+			SPA_TYPE_INTERFACE_Node,
+			SPA_VERSION_NODE,
+			&impl_node, this);
 	spa_hook_list_init(&this->hooks);
 
 	if (this->cpu)

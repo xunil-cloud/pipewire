@@ -47,7 +47,7 @@ struct data {
 	struct spa_support support[4];
 	uint32_t n_support;
 	struct spa_log *log;
-	struct spa_callbacks loop;
+	struct spa_loop loop;
 	struct spa_node *node;
 	struct spa_hook listener;
 };
@@ -259,7 +259,10 @@ int main(int argc, char *argv[])
 	}
 
 	data.log = &default_log.log;
-	data.loop = SPA_CALLBACKS_INIT(&impl_loop, &data);
+	data.loop.iface = SPA_INTERFACE_INIT(
+			SPA_TYPE_INTERFACE_Loop,
+			SPA_VERSION_LOOP,
+			&impl_loop, &data);
 
 	if ((str = getenv("SPA_DEBUG")))
 		data.log->level = atoi(str);

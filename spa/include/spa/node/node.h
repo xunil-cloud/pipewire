@@ -29,15 +29,17 @@
 extern "C" {
 #endif
 
-/**
- * A spa_node is a component that can consume and produce buffers.
- */
-struct spa_node;
-
 #include <spa/utils/defs.h>
 #include <spa/utils/result.h>
 #include <spa/utils/type.h>
 #include <spa/utils/hook.h>
+
+
+/**
+ * A spa_node is a component that can consume and produce buffers.
+ */
+#define SPA_VERSION_NODE	0
+struct spa_node { struct spa_interface iface; };
 
 #include <spa/support/plugin.h>
 
@@ -601,7 +603,7 @@ struct spa_node_methods {
 ({									\
 	int _res = -ENOTSUP;						\
 	struct spa_node *_n = o;					\
-	spa_callbacks_call_res((struct spa_callbacks*)_n,		\
+	spa_interface_call_res(&_n->iface,				\
 			struct spa_node_methods, _res,			\
 			method, version, ##__VA_ARGS__);		\
 	_res;								\

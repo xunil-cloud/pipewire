@@ -117,7 +117,7 @@ struct stream {
 	struct pw_node *node;
 	struct spa_port_info port_info;
 
-	struct spa_callbacks impl_node;
+	struct spa_node impl_node;
 	struct spa_node_methods node_methods;
 	struct spa_hook_list hooks;
 	struct spa_callbacks callbacks;
@@ -969,9 +969,12 @@ static int handle_connect(struct pw_stream *stream)
 	else
 		impl->node_methods.process = impl_node_process_output;
 
-	impl->impl_node = SPA_CALLBACKS_INIT(&impl->node_methods, impl);
+	impl->impl_node.iface = SPA_INTERFACE_INIT(
+			SPA_TYPE_INTERFACE_Node,
+			SPA_VERSION_NODE,
+			&impl->node_methods, impl);
 
-	pw_node_set_implementation(impl->node, (struct spa_node *)&impl->impl_node);
+	pw_node_set_implementation(impl->node, &impl->impl_node);
 
 	pw_node_register(impl->node, NULL, NULL, NULL);
 	if (!SPA_FLAG_CHECK(impl->flags, PW_STREAM_FLAG_INACTIVE))

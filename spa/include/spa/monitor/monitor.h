@@ -29,12 +29,13 @@
 extern "C" {
 #endif
 
-struct spa_monitor;
-
 #include <spa/utils/defs.h>
 #include <spa/utils/dict.h>
 #include <spa/pod/event.h>
 #include <spa/pod/builder.h>
+
+#define SPA_VERSION_MONITOR	0
+struct spa_monitor { struct spa_interface iface; };
 
 enum spa_monitor_event {
 	SPA_MONITOR_EVENT_Invalid,
@@ -117,7 +118,7 @@ static inline int spa_monitor_set_callbacks(struct spa_monitor *m,
 		const struct spa_monitor_callbacks *callbacks, void *data)
 {
 	int res = -ENOTSUP;
-	spa_callbacks_call_res((struct spa_callbacks*)m,
+	spa_interface_call_res(&m->iface,
 			struct spa_monitor_methods, res, set_callbacks, 0,
 			callbacks, data);
 	return res;

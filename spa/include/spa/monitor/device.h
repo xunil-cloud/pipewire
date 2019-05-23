@@ -29,18 +29,19 @@
 extern "C" {
 #endif
 
-/**
- * spa_device:
- *
- * The device interface.
- */
-struct spa_device;
-
 #include <spa/utils/defs.h>
 #include <spa/utils/dict.h>
 #include <spa/support/plugin.h>
 #include <spa/pod/builder.h>
 #include <spa/pod/event.h>
+
+/**
+ * spa_device:
+ *
+ * The device interface.
+ */
+#define SPA_VERSION_DEVICE 0
+struct spa_device { struct spa_interface iface; };
 
 struct spa_device_info {
 #define SPA_VERSION_DEVICE_INFO 0
@@ -190,11 +191,11 @@ struct spa_device_methods {
 			  const struct spa_pod *param);
 };
 
-#define spa_device_method(o,method,version,...)			\
+#define spa_device_method(o,method,version,...)				\
 ({									\
 	int _res = -ENOTSUP;						\
-	struct spa_device *d = o;					\
-	spa_callbacks_call_res((struct spa_callbacks*)d,		\
+	struct spa_device *_o = o;					\
+	spa_interface_call_res(&_o->iface,				\
 			struct spa_device_methods, _res,		\
 			method, version, ##__VA_ARGS__);		\
 	_res;								\

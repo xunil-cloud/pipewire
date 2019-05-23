@@ -39,7 +39,7 @@
 
 struct impl {
 	struct spa_handle handle;
-	struct spa_callbacks cpu;
+	struct spa_cpu cpu;
 
 	struct spa_log *log;
 
@@ -152,7 +152,10 @@ impl_init(const struct spa_handle_factory *factory,
 
 	this = (struct impl *) handle;
 
-	this->cpu = SPA_CALLBACKS_INIT(&impl_cpu, this);
+	this->cpu.iface = SPA_INTERFACE_INIT(
+			SPA_TYPE_INTERFACE_CPU,
+			SPA_VERSION_CPU,
+			&impl_cpu, this);
 
 	for (i = 0; i < n_support; i++) {
 		if (support[i].type == SPA_TYPE_INTERFACE_Log)

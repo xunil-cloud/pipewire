@@ -64,7 +64,7 @@ struct data {
 	struct spa_dict dict;
 	struct spa_param_info params[5];
 
-	struct spa_callbacks impl_node;
+	struct spa_node impl_node;
 	struct spa_hook_list hooks;
 	struct spa_io_buffers *io;
 	struct spa_io_control *io_notify;
@@ -473,7 +473,10 @@ static void make_node(struct data *data)
 	if (data->path)
 		pw_properties_set(props, PW_NODE_PROP_TARGET_NODE, data->path);
 
-	data->impl_node = SPA_CALLBACKS_INIT(&impl_node, data);
+	data->impl_node.iface = SPA_INTERFACE_INIT(
+			SPA_TYPE_INTERFACE_Node,
+			SPA_VERSION_NODE,
+			&impl_node, data);
 	pw_remote_export(data->remote, SPA_TYPE_INTERFACE_Node, props, &data->impl_node);
 }
 
