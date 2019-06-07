@@ -220,6 +220,7 @@ static int impl_pollfd_wait(void *object, int pfd,
 	struct impl *impl = object;
 	uint32_t i, j, n_pollset;
 	struct evl_poll_event pollset[n_ev];
+	void *polldata[n_ev];
 	struct timespec tv;
 	int nfds;
 
@@ -230,6 +231,7 @@ static int impl_pollfd_wait(void *object, int pfd,
 		pollset[j].fd = e->fd;
 		pollset[j].events = e->events;
 		pollset[j].revents = 0;
+		polldata[j] = e->data;
 		j++;
 	}
 	n_pollset = j;
@@ -241,16 +243,11 @@ static int impl_pollfd_wait(void *object, int pfd,
 		return nfds;
 
         for (i = 0, j = 0; i < n_pollset; i++) {
-		struct poll_entry *e;
-
 		if (pollset[i].revents == 0)
 			continue;
 
-		if ((e = find_entry(impl, pfd, pollset[i].fd)) == NULL)
-			continue;
-
 		ev[j].events = pollset[i].revents;
-		ev[j].data = e->data;
+		ev[j].data = polldata[i];
 		j++;
 	}
 	return j;
