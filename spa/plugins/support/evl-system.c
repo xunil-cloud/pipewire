@@ -28,12 +28,11 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <fcntl.h>
 #include <sys/eventfd.h>
 #include <sys/signalfd.h>
 
-#include <evl/clock.h>
-#include <evl/poll.h>
-#include <evl/syscall.h>
+#include <evl/evl.h>
 #include <evl/timer.h>
 
 #include <spa/support/log.h>
@@ -60,6 +59,10 @@ struct impl {
 
 	struct poll_entry entries[MAX_POLL];
 	uint32_t n_entries;
+
+	uint32_t n_xbuf;
+	int attached;
+	int pid;
 };
 
 static ssize_t impl_read(void *object, int fd, void *buf, size_t count)
@@ -181,7 +184,7 @@ static int impl_pollfd_add(void *object, int pfd, int fd, uint32_t events, void 
 	e->fd = fd;
 	e->events = spa_io_to_poll(events);
 	e->data = data;
-	return evl_add_pollfd(pfd, fd, e->events)
+	return evl_add_pollfd(pfd, fd, e->events);
 }
 
 static int impl_pollfd_mod(void *object, int pfd, int fd, uint32_t events, void *data)
@@ -196,7 +199,7 @@ static int impl_pollfd_mod(void *object, int pfd, int fd, uint32_t events, void 
 	}
 	e->events = spa_io_to_poll(events);
 	e->data = data;
-	return evl_mod_pollfd(pfd, fd, e->events)
+	return evl_mod_pollfd(pfd, fd, e->events);
 }
 
 static int impl_pollfd_del(void *object, int pfd, int fd)
@@ -211,43 +214,44 @@ static int impl_pollfd_del(void *object, int pfd, int fd)
 	}
 	e->pfd = -1;
 	e->fd = -1;
-	return evl_del_pollfd(pfd, fd)
+	return evl_del_pollfd(pfd, fd);
 }
 
 static int impl_pollfd_wait(void *object, int pfd,
 		struct spa_poll_event *ev, int n_ev, int timeout)
 {
 	struct impl *impl = object;
-	uint32_t i, j, n_pollset;
 	struct evl_poll_event pollset[n_ev];
-	void *polldata[n_ev];
 	struct timespec tv;
-	int nfds;
+	int i, j, res;
 
-        for (i = 0, j = 0; i < n_entries && j < n_ev; i++) {
-		struct poll_entry *e = &impl->entries[i];
-		if (e->pfd != pfd)
-			continue;
-		pollset[j].fd = e->fd;
-		pollset[j].events = e->events;
-		pollset[j].revents = 0;
-		polldata[j] = e->data;
-		j++;
+	if (impl->attached == 0) {
+		res = evl_attach_self("evl-thread-%d-%p", impl->pid, impl);
+		if (res < 0)
+			return res;
+		impl->attached = res;
 	}
-	n_pollset = j;
 
-	tv.tv_sec = timeout / SPA_MSEC_PER_SEC;
-	tv.tv_nsec = (timeout % SPA_MSEC_PER_SEC) * SPA_NSEC_PER_MSEC;
-	nfds = evl_timedpoll(pfd, pollset, n_pollset, &tv);
-	if (SPA_UNLIKELY(nfds < 0))
-		return nfds;
+	if (timeout == -1) {
+		tv.tv_sec = 0;
+		tv.tv_nsec = 0;
+	} else {
+		tv.tv_sec = timeout / SPA_MSEC_PER_SEC;
+		tv.tv_nsec = (timeout % SPA_MSEC_PER_SEC) * SPA_NSEC_PER_MSEC;
+	}
+	res = evl_timedpoll(pfd, pollset, n_ev, &tv);
+	if (SPA_UNLIKELY(res < 0))
+		return res;
 
-        for (i = 0, j = 0; i < n_pollset; i++) {
-		if (pollset[i].revents == 0)
+        for (i = 0, j = 0; i < res; i++) {
+		struct poll_entry *e;
+
+		e = find_entry(impl, pfd, pollset[i].fd);
+		if (e == NULL)
 			continue;
 
-		ev[j].events = pollset[i].revents;
-		ev[j].data = polldata[i];
+		ev[j].events = spa_poll_to_io(pollset[i].events);
+		ev[j].data = e->data;
 		j++;
 	}
 	return j;
@@ -256,7 +260,16 @@ static int impl_pollfd_wait(void *object, int pfd,
 /* timers */
 static int impl_timerfd_create(void *object, int clockid, int flags)
 {
-	return evl_new_timer(clockid);
+	int cid;
+
+	switch (clockid) {
+	case CLOCK_MONOTONIC:
+		cid = EVL_CLOCK_MONOTONIC;
+		break;
+	default:
+		return -ENOTSUP;
+	}
+	return evl_new_timer(cid);
 }
 
 static int impl_timerfd_settime(void *object,
@@ -264,7 +277,20 @@ static int impl_timerfd_settime(void *object,
 			const struct itimerspec *new_value,
 			struct itimerspec *old_value)
 {
-	return evl_set_timer(fd, new_value, old_value);
+	struct itimerspec val = *new_value;
+
+	if (!(flags & SPA_FD_TIMER_ABSTIME)) {
+		struct timespec now;
+
+		evl_read_clock(EVL_CLOCK_MONOTONIC, &now);
+		val.it_value.tv_sec += now.tv_sec;
+		val.it_value.tv_nsec += now.tv_nsec;
+		if (val.it_value.tv_nsec >= 1000000000) {
+			val.it_value.tv_sec++;
+			val.it_value.tv_nsec -= 1000000000;
+		}
+	}
+	return evl_set_timer(fd, &val, old_value);
 }
 
 static int impl_timerfd_gettime(void *object,
@@ -285,14 +311,20 @@ static int impl_timerfd_read(void *object, int fd, uint64_t *expirations)
 /* events */
 static int impl_eventfd_create(void *object, int flags)
 {
-	int fl = 0;
-	if (flags & SPA_FD_CLOEXEC)
-		fl |= EFD_CLOEXEC;
+	struct impl *impl = object;
+	int res;
+
+	res = evl_new_xbuf(1024, 1024, "xbuf-%d-%p-%d", impl->pid, impl, impl->n_xbuf);
+	if (res < 0) {
+		errno = -res;
+		return -1;
+	}
+	impl->n_xbuf++;
+
 	if (flags & SPA_FD_NONBLOCK)
-		fl |= EFD_NONBLOCK;
-	if (flags & SPA_FD_EVENT_SEMAPHORE)
-		fl |= EFD_SEMAPHORE;
-	return eventfd(0, fl);
+		fcntl(res, F_SETFL, fcntl(res, F_GETFL) | O_NONBLOCK);
+
+	return res;
 }
 
 static int impl_eventfd_write(void *object, int fd, uint64_t count)
@@ -304,7 +336,7 @@ static int impl_eventfd_write(void *object, int fd, uint64_t count)
 
 static int impl_eventfd_read(void *object, int fd, uint64_t *count)
 {
-	if (read(fd, count, sizeof(uint64_t)) != sizeof(uint64_t))
+	if (oob_read(fd, count, sizeof(uint64_t)) != sizeof(uint64_t))
 		return -errno;
 	return 0;
 }
@@ -407,6 +439,7 @@ impl_init(const struct spa_handle_factory *factory,
 {
 	struct impl *impl;
 	uint32_t i;
+	int res;
 
 	spa_return_val_if_fail(factory != NULL, -EINVAL);
 	spa_return_val_if_fail(handle != NULL, -EINVAL);
@@ -426,6 +459,12 @@ impl_init(const struct spa_handle_factory *factory,
 			impl->log = support[i].data;
 			break;
 		}
+	}
+	impl->pid = getpid();
+
+	if ((res = evl_attach_self("evl-system-%d-%p", impl->pid, impl)) < 0) {
+		spa_log_error(impl->log, NAME " %p: init failed: %s", impl, spa_strerror(res));
+		return res;
 	}
 
 	spa_log_debug(impl->log, NAME " %p: initialized", impl);
