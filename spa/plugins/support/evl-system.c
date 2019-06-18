@@ -494,7 +494,7 @@ impl_enum_interface_info(const struct spa_handle_factory *factory,
 
 const struct spa_handle_factory spa_support_evl_system_factory = {
 	SPA_VERSION_HANDLE_FACTORY,
-	"evl.system",
+	"system",
 	NULL,
 	impl_get_size,
 	impl_init,
