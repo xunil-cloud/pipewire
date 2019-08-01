@@ -1,0 +1,10 @@
+<map id="pw_properties_setva" name="pw_properties_setva">
+<area shape="rect" id="node1" title=" " alt="" coords="747,81,904,108"/>
+<area shape="rect" id="node2" href="$structpw__properties.html#a24c715aa1d9eec46b7ebef61410d6f13" title="Set a property value by format." alt="" coords="452,81,699,108"/>
+<area shape="rect" id="node3" href="$classpw__core.html#a149d054319a8cd3fb6206b233d2476cd" title="Create a new core object." alt="" coords="232,5,404,32"/>
+<area shape="rect" id="node5" href="$factory_8c.html#a00cc60bc962f726a598e7b74fc55a76f" title=" " alt="" coords="243,56,393,83"/>
+<area shape="rect" id="node6" href="$link_8c.html#a0e8395287b38de06906630600956891e" title="Finish link configuration and register." alt="" coords="253,107,383,133"/>
+<area shape="rect" id="node7" href="$classpw__pipewire.html#aaa9f7d9822aeae824c0e006d34b926f5" title="Fill remote properties." alt="" coords="241,158,395,199"/>
+<area shape="rect" id="node4" href="$stream_8c.html#a0aa398ef7b09697a0e48719b27112614" title=" " alt="" coords="5,5,184,32"/>
+<area shape="rect" id="node8" href="$remote_8c.html#ab4d94be2412050ec56ad495ccf75f9b3" title=" " alt="" coords="30,165,159,192"/>
+</map>

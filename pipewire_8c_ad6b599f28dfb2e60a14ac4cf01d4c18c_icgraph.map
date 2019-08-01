@@ -1,0 +1,16 @@
+<map id="pw_type_info" name="pw_type_info">
+<area shape="rect" id="node1" title=" " alt="" coords="719,157,828,184"/>
+<area shape="rect" id="node2" href="$remote_8c.html#abf21100a258036a9142d8fba0dcaf8b4" title="register a type that can be exported on a remote." alt="" coords="452,31,671,57"/>
+<area shape="rect" id="node3" href="$factory_8c.html#a00cc60bc962f726a598e7b74fc55a76f" title=" " alt="" coords="243,5,393,32"/>
+<area shape="rect" id="node4" href="$classpw__global.html#a70cf2ad61f1f9b7c1cb40a1ea6e73ce5" title="Create a new global." alt="" coords="463,132,659,159"/>
+<area shape="rect" id="node12" href="$protocol_8c.html#adaa5ef11c165140322c7f6af484ddccf" title=" " alt="" coords="465,183,657,209"/>
+<area shape="rect" id="node13" href="$classpw__proxy.html#a7c06847bc4258d7a603f9bd507309226" title="Create a proxy object with a given id and type." alt="" coords="466,233,657,260"/>
+<area shape="rect" id="node14" href="$resource_8c.html#a13bc34ff7eecd313331ff6d95e8c95a5" title="Make a new resource for client." alt="" coords="492,284,631,311"/>
+<area shape="rect" id="node5" href="$client_8c.html#a4720b4020cfdb50e4986d559d5417139" title="Finish configuration and register a client." alt="" coords="247,56,389,83"/>
+<area shape="rect" id="node6" href="$classpw__core.html#a149d054319a8cd3fb6206b233d2476cd" title="Create a new core object." alt="" coords="232,107,404,133"/>
+<area shape="rect" id="node8" href="$device_8c.html#abd1484330b3aba2d6ea0ee994d27c5dc" title=" " alt="" coords="244,157,392,184"/>
+<area shape="rect" id="node9" href="$link_8c.html#a0e8395287b38de06906630600956891e" title="Finish link configuration and register." alt="" coords="253,208,383,235"/>
+<area shape="rect" id="node10" href="$node_8c.html#a113fdbfe9945521c737bfec4a77ecf6d" title="Complete initialization of the node and register." alt="" coords="249,259,387,285"/>
+<area shape="rect" id="node11" href="$port_8c.html#a4a6def38ff053282b3b792dc643b12c9" title=" " alt="" coords="253,309,383,336"/>
+<area shape="rect" id="node7" href="$stream_8c.html#a0aa398ef7b09697a0e48719b27112614" title=" " alt="" coords="5,107,184,133"/>
+</map>

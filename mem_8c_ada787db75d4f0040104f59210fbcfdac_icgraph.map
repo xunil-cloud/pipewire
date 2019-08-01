@@ -1,0 +1,8 @@
+<map id="pw_memmap_free" name="pw_memmap_free">
+<area shape="rect" id="node1" title="Unmap a region." alt="" coords="991,31,1135,57"/>
+<area shape="rect" id="node2" href="$structpw__memblock.html#a458b69a13b15233b8be7d1dd98c2c23f" title="Free a memblock." alt="" coords="689,31,943,57"/>
+<area shape="rect" id="node3" href="$mem_8c.html#ab253128cb2d2bc7ad5203d2b65e762c8" title="Destroy a pool." alt="" coords="475,31,641,57"/>
+<area shape="rect" id="node4" href="$classpw__core.html#a3fe8a902e97223d11c0e8e4640c16379" title="Destroy a core object." alt="" coords="232,5,427,32"/>
+<area shape="rect" id="node6" href="$remote_8c.html#a0e927d9eff1cc1a6ae723617e4f4abec" title=" " alt="" coords="254,56,405,83"/>
+<area shape="rect" id="node5" href="$stream_8c.html#a0aa398ef7b09697a0e48719b27112614" title=" " alt="" coords="5,5,184,32"/>
+</map>

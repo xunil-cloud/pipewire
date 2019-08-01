@@ -1,0 +1,5 @@
+<map id="pw_mempool_import" name="pw_mempool_import">
+<area shape="rect" id="node1" title="Import an fd into the pool." alt="" coords="500,5,660,32"/>
+<area shape="rect" id="node2" href="$mem_8c.html#ac19e242f78a043eb56e57009cf87623e" title="Import a block from another pool." alt="" coords="249,5,452,32"/>
+<area shape="rect" id="node3" href="$mem_8c.html#a21cda477fe5bf4681ccf6869acf96d20" title=" " alt="" coords="5,5,201,32"/>
+</map>

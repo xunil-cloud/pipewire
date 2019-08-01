@@ -1,0 +1,6 @@
+<map id="pw_memblock_map" name="pw_memblock_map">
+<area shape="rect" id="node1" title="Map a region of a memory block." alt="" coords="469,42,623,69"/>
+<area shape="rect" id="node2" href="$structpw__memblock.html#a2e25b63057f2c8159c9ad7eba16555db" title="Create a new memblock." alt="" coords="208,5,421,47"/>
+<area shape="rect" id="node4" href="$mem_8c.html#a7066384a72de880e75a1b922d2d62dd2" title="Map a region of a memory block with id." alt="" coords="232,71,397,98"/>
+<area shape="rect" id="node3" href="$control_8c.html#a1b1172c7061a840bc1298e7e431dd39c" title=" " alt="" coords="5,13,160,39"/>
+</map>

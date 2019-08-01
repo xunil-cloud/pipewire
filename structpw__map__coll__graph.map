@@ -1,0 +1,4 @@
+<map id="pw_map" name="pw_map">
+<area shape="rect" id="node1" title="A map." alt="" coords="8,95,85,121"/>
+<area shape="rect" id="node2" href="$structpw__array.html" title="An array object." alt="" coords="5,5,88,32"/>
+</map>

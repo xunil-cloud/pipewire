@@ -1,0 +1,13 @@
+<map id="stream" name="stream">
+<area shape="rect" id="node1" title=" " alt="" coords="348,199,416,225"/>
+<area shape="rect" id="node2" href="$classpw__core.html" title="the core PipeWire object" alt="" coords="5,5,81,32"/>
+<area shape="rect" id="node7" href="$structdata.html" title=" " alt="" coords="101,95,151,121"/>
+<area shape="rect" id="node3" href="$structpw__time.html" title="A time structure." alt="" coords="176,95,255,121"/>
+<area shape="rect" id="node4" href="$classpw__stream.html" title="PipeWire stream object class." alt="" coords="279,95,373,121"/>
+<area shape="rect" id="node5" href="$classpw__node.html" title="PipeWire node class." alt="" coords="398,95,478,121"/>
+<area shape="rect" id="node6" href="$structprops.html" title=" " alt="" coords="502,95,561,121"/>
+<area shape="rect" id="node8" href="$classpw__remote.html" title="Represents a connection with a remote PipeWire instance." alt="" coords="105,5,200,32"/>
+<area shape="rect" id="node9" href="$structqueue.html" title=" " alt="" coords="585,95,648,121"/>
+<area shape="rect" id="node10" href="$structbuffer.html" title=" " alt="" coords="677,95,738,121"/>
+<area shape="rect" id="node11" href="$structpw__buffer.html" title=" " alt="" coords="664,5,751,32"/>
+</map>

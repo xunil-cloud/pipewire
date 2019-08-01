@@ -1,0 +1,8 @@
+<map id="pw_global_get_permissions" name="pw_global_get_permissions">
+<area shape="rect" id="node1" title="Get the permissions of the global for a given client." alt="" coords="527,81,729,108"/>
+<area shape="rect" id="node2" href="$core_8c.html#a10a751bf1c704728191d9a7c31a63172" title="Find a core global by id." alt="" coords="300,5,455,32"/>
+<area shape="rect" id="node4" href="$classpw__core.html#a5d492e950bb2c4bbb47c3aa2ad348e66" title="Find a port to link with." alt="" coords="276,56,479,83"/>
+<area shape="rect" id="node5" href="$core_8c.html#aab8cf5a0043f6702ac88f6718b5aac39" title="Iterate the globals of the core." alt="" coords="284,107,471,133"/>
+<area shape="rect" id="node6" href="$classpw__global.html#a9650909253626e9d1252b663591fc361" title="register a global to the core registry" alt="" coords="296,158,459,199"/>
+<area shape="rect" id="node3" href="$client_8c.html#aa4a8794d28485a52146b71c1fad7a479" title="Update the client permissions." alt="" coords="5,5,228,32"/>
+</map>

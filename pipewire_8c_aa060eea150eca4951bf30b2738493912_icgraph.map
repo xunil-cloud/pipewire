@@ -1,0 +1,9 @@
+<map id="pw_load_spa_handle" name="pw_load_spa_handle">
+<area shape="rect" id="node1" title=" " alt="" coords="923,56,1080,83"/>
+<area shape="rect" id="node2" href="$core_8c.html#aedc3c654f650044527ebe8a4aca75788" title=" " alt="" coords="683,5,875,32"/>
+<area shape="rect" id="node3" href="$classpw__core.html#a149d054319a8cd3fb6206b233d2476cd" title="Create a new core object." alt="" coords="232,85,404,112"/>
+<area shape="rect" id="node5" href="$structpw__loop.html#a67a638da8a3914b6fa0aa6d9eda6b6e0" title="Create a new loop." alt="" coords="693,115,865,141"/>
+<area shape="rect" id="node4" href="$stream_8c.html#a0aa398ef7b09697a0e48719b27112614" title=" " alt="" coords="5,85,184,112"/>
+<area shape="rect" id="node6" href="$classpw__data__loop.html#aa81641e625a0d12db3ac1e9fa037809c" title="Create a new pw_data_loop." alt="" coords="456,107,631,149"/>
+<area shape="rect" id="node7" href="$classpw__main__loop.html#ac905677385238893cf73a362c960f957" title="Create a new new main loop." alt="" coords="452,173,635,214"/>
+</map>

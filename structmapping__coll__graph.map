@@ -1,0 +1,8 @@
+<map id="mapping" name="mapping">
+<area shape="rect" id="node1" title=" " alt="" coords="11,363,90,389"/>
+<area shape="rect" id="node2" href="$structmemblock.html" title=" " alt="" coords="5,273,96,300"/>
+<area shape="rect" id="node3" href="$structpw__memblock.html" title="Memory block structure." alt="" coords="52,184,169,211"/>
+<area shape="rect" id="node4" href="$structpw__memmap.html" title="a mapped region of a pw_memblock" alt="" coords="123,273,234,300"/>
+<area shape="rect" id="node5" href="$structpw__mempool.html" title=" " alt="" coords="55,95,166,121"/>
+<area shape="rect" id="node6" href="$structpw__properties.html" title="A collection of key/value pairs." alt="" coords="53,5,168,32"/>
+</map>

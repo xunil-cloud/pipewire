@@ -1,0 +1,9 @@
+<map id="memmap" name="memmap">
+<area shape="rect" id="node1" title=" " alt="" coords="5,452,91,479"/>
+<area shape="rect" id="node2" href="$structpw__memmap.html" title="a mapped region of a pw_memblock" alt="" coords="15,95,126,121"/>
+<area shape="rect" id="node3" href="$structpw__memblock.html" title="Memory block structure." alt="" coords="75,184,192,211"/>
+<area shape="rect" id="node7" href="$structmemblock.html" title=" " alt="" coords="83,273,173,300"/>
+<area shape="rect" id="node4" href="$structpw__mempool.html" title=" " alt="" coords="150,95,261,121"/>
+<area shape="rect" id="node5" href="$structpw__properties.html" title="A collection of key/value pairs." alt="" coords="148,5,263,32"/>
+<area shape="rect" id="node6" href="$structmapping.html" title=" " alt="" coords="77,363,155,389"/>
+</map>

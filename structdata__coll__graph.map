@@ -1,0 +1,5 @@
+<map id="data" name="data">
+<area shape="rect" id="node1" title=" " alt="" coords="73,95,123,121"/>
+<area shape="rect" id="node2" href="$classpw__core.html" title="the core PipeWire object" alt="" coords="5,5,81,32"/>
+<area shape="rect" id="node3" href="$classpw__remote.html" title="Represents a connection with a remote PipeWire instance." alt="" coords="105,5,200,32"/>
+</map>

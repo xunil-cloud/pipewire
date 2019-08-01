@@ -1,0 +1,9 @@
+<map id="impl" name="impl">
+<area shape="rect" id="node1" title=" " alt="" coords="141,273,192,300"/>
+<area shape="rect" id="node2" href="$classpw__device.html" title="PipeWire device interface." alt="" coords="5,184,96,211"/>
+<area shape="rect" id="node3" href="$structpw__memblock.html" title="Memory block structure." alt="" coords="237,184,355,211"/>
+<area shape="rect" id="node4" href="$structpw__memmap.html" title="a mapped region of a pw_memblock" alt="" coords="275,273,386,300"/>
+<area shape="rect" id="node5" href="$structpw__mempool.html" title=" " alt="" coords="241,95,351,121"/>
+<area shape="rect" id="node6" href="$structpw__properties.html" title="A collection of key/value pairs." alt="" coords="239,5,353,32"/>
+<area shape="rect" id="node7" href="$classpw__control.html" title="The control object." alt="" coords="120,184,213,211"/>
+</map>

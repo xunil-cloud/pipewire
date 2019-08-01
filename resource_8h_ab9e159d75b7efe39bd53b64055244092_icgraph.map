@@ -1,0 +1,11 @@
+<map id="pw_resource_destroy" name="pw_resource_destroy">
+<area shape="rect" id="node1" title="Destroy a resource." alt="" coords="1020,75,1180,101"/>
+<area shape="rect" id="node2" href="$classpw__core.html#a3fe8a902e97223d11c0e8e4640c16379" title="Destroy a core object." alt="" coords="232,24,427,51"/>
+<area shape="rect" id="node4" href="$classpw__global.html#a57e86d7712b658ee7d2e0f73cfcb9db5" title="Destroy a global." alt="" coords="777,67,940,109"/>
+<area shape="rect" id="node8" href="$global_8c.html#a523224e7089f253c06b3f93d608d0897" title=" " alt="" coords="745,163,972,189"/>
+<area shape="rect" id="node3" href="$stream_8c.html#a0aa398ef7b09697a0e48719b27112614" title=" " alt="" coords="5,24,184,51"/>
+<area shape="rect" id="node5" href="$device_8c.html#a413c1f742b769410a3400e4859d92588" title=" " alt="" coords="513,49,659,76"/>
+<area shape="rect" id="node6" href="$factory_8c.html#a3ec95397d9e642db23678f2a52800831" title=" " alt="" coords="511,100,661,127"/>
+<area shape="rect" id="node7" href="$classpw__module.html#aeb91aaec73271350e79774d753202045" title="Destroy a module." alt="" coords="496,151,676,193"/>
+<area shape="rect" id="node9" href="$client_8c.html#aa4a8794d28485a52146b71c1fad7a479" title="Update the client permissions." alt="" coords="475,217,697,244"/>
+</map>

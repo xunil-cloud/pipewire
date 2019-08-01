@@ -1,0 +1,4 @@
+<map id="pw_node_find_port" name="pw_node_find_port">
+<area shape="rect" id="node1" title="Find the port with direction and port_id or NULL when not found." alt="" coords="256,5,401,32"/>
+<area shape="rect" id="node2" href="$classpw__core.html#a5d492e950bb2c4bbb47c3aa2ad348e66" title="Find a port to link with." alt="" coords="5,5,208,32"/>
+</map>

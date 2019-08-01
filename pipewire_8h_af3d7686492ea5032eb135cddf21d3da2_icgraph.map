@@ -1,0 +1,12 @@
+<map id="pw_unload_spa_handle" name="pw_unload_spa_handle">
+<area shape="rect" id="node1" title=" " alt="" coords="948,64,1121,91"/>
+<area shape="rect" id="node2" href="$classpw__core.html#a3fe8a902e97223d11c0e8e4640c16379" title="Destroy a core object." alt="" coords="232,31,427,58"/>
+<area shape="rect" id="node4" href="$structpw__loop.html#ae7e5a8b4500832184aa06705d3569933" title="Destroy a loop." alt="" coords="705,64,900,91"/>
+<area shape="rect" id="node7" href="$structpw__loop.html#a67a638da8a3914b6fa0aa6d9eda6b6e0" title="Create a new loop." alt="" coords="717,162,889,188"/>
+<area shape="rect" id="node3" href="$stream_8c.html#a0aa398ef7b09697a0e48719b27112614" title=" " alt="" coords="5,96,184,123"/>
+<area shape="rect" id="node5" href="$classpw__data__loop.html#a9e8300a978c0a9ecefb54dc6b23f333c" title="Destroy a data loop." alt="" coords="479,24,653,65"/>
+<area shape="rect" id="node6" href="$classpw__main__loop.html#adae8ebcf8d461723a8cf53be56c802db" title="Destroy a main loop." alt="" coords="475,89,657,130"/>
+<area shape="rect" id="node8" href="$classpw__data__loop.html#aa81641e625a0d12db3ac1e9fa037809c" title="Create a new pw_data_loop." alt="" coords="479,154,653,196"/>
+<area shape="rect" id="node10" href="$classpw__main__loop.html#ac905677385238893cf73a362c960f957" title="Create a new new main loop." alt="" coords="475,220,657,261"/>
+<area shape="rect" id="node9" href="$classpw__core.html#a149d054319a8cd3fb6206b233d2476cd" title="Create a new core object." alt="" coords="243,122,415,148"/>
+</map>
