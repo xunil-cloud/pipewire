@@ -55,8 +55,6 @@
 struct impl {
 	struct pw_link this;
 
-	bool prepare;
-	bool activated;
 	bool passive;
 
 	struct pw_work_queue *work;
@@ -142,21 +140,32 @@ static void pw_link_update_state(struct pw_link *link, enum pw_link_state state,
 	debug_link(link);
 
 	if (old != PW_LINK_STATE_PAUSED && state == PW_LINK_STATE_PAUSED) {
-		if (++out->n_ready_output_links == out->n_used_output_links &&
+		++out->n_ready_output_links;
+		++in->n_ready_input_links;
+		pw_link_activate(link);
+		pw_core_recalc_graph(link->core);
+
+#if 0
+		if (out->n_ready_output_links == out->n_used_output_links &&
 		    out->n_ready_input_links == out->n_used_input_links)
 			pw_node_set_state(out, PW_NODE_STATE_RUNNING);
-		if (++in->n_ready_input_links == in->n_used_input_links &&
+		if (in->n_ready_input_links == in->n_used_input_links &&
 		    in->n_ready_output_links == in->n_used_output_links)
 			pw_node_set_state(in, PW_NODE_STATE_RUNNING);
-		pw_link_activate(link);
+#endif
 	}
 	else if (old == PW_LINK_STATE_PAUSED && state < PW_LINK_STATE_PAUSED) {
-		if (--out->n_ready_output_links == 0 &&
+		--out->n_ready_output_links;
+		--in->n_ready_input_links;
+		pw_core_recalc_graph(link->core);
+#if 0
+		if (out->n_ready_output_links == 0 &&
 		    out->n_ready_input_links == 0)
 			pw_node_set_state(out, PW_NODE_STATE_IDLE);
-		if (--in->n_ready_input_links == 0 &&
+		if (in->n_ready_input_links == 0 &&
 		    in->n_ready_output_links == 0)
 			pw_node_set_state(in, PW_NODE_STATE_IDLE);
+#endif
 	}
 }
 
@@ -750,9 +759,10 @@ int pw_link_activate(struct pw_link *this)
 	struct impl *impl = SPA_CONTAINER_OF(this, struct impl, this);
 	int res;
 
-	pw_log_debug(NAME" %p: activate %d %d", this, impl->activated, this->info.state);
+	pw_log_debug(NAME" %p: activate activated:%d state:%d",
+			this, this->activated, this->info.state);
 
-	if (impl->activated)
+	if (this->activated)
 		return 0;
 
 	pw_link_prepare(this);
@@ -768,7 +778,7 @@ int pw_link_activate(struct pw_link *this)
 	if (this->info.state == PW_LINK_STATE_PAUSED) {
 		pw_loop_invoke(this->output->node->data_loop,
 		       do_activate_link, SPA_ID_INVALID, NULL, 0, false, this);
-		impl->activated = true;
+		this->activated = true;
 	}
 	return 0;
 }
@@ -900,12 +910,12 @@ int pw_link_prepare(struct pw_link *this)
 {
 	struct impl *impl = SPA_CONTAINER_OF(this, struct impl, this);
 
-	pw_log_debug(NAME" %p: prepare %d", this, impl->prepare);
+	pw_log_debug(NAME" %p: prepare %d", this, this->prepared);
 
-	if (impl->prepare)
+	if (this->prepared)
 		return 0;
 
-	impl->prepare = true;
+	this->prepared = true;
 
 	this->output->node->n_used_output_links++;
 	this->input->node->n_used_input_links++;
@@ -953,20 +963,21 @@ int pw_link_deactivate(struct pw_link *this)
 	struct impl *impl = SPA_CONTAINER_OF(this, struct impl, this);
 	struct pw_node *input_node, *output_node;
 
-	pw_log_debug(NAME" %p: deactivate %d %d", this, impl->prepare, impl->activated);
+	pw_log_debug(NAME" %p: deactivate prepared:%d activated:%d",
+			this, this->prepared, this->activated);
 
-	if (!impl->prepare)
+	if (!this->prepared)
 		return 0;
 
-	impl->prepare = false;
-	if (impl->activated) {
+	this->prepared = false;
+	if (this->activated) {
 		pw_loop_invoke(this->output->node->data_loop,
 			       do_deactivate_link, SPA_ID_INVALID, NULL, 0, true, this);
 
 		port_set_io(this, this->output, SPA_IO_Buffers, NULL, 0, &this->rt.out_mix);
 		port_set_io(this, this->input, SPA_IO_Buffers, NULL, 0, &this->rt.in_mix);
 
-		impl->activated = false;
+		this->activated = false;
 	}
 
 	output_node = this->output->node;
@@ -982,6 +993,7 @@ int pw_link_deactivate(struct pw_link *this)
 
 	debug_link(this);
 
+#if 0
 	if (input_node->n_used_input_links <= input_node->idle_used_input_links &&
 	    input_node->n_used_output_links <= input_node->idle_used_output_links &&
 	    input_node->info.state > PW_NODE_STATE_IDLE) {
@@ -997,6 +1009,7 @@ int pw_link_deactivate(struct pw_link *this)
 		pw_log_debug(NAME" %p: output port %p state %d -> %d", this,
 				this->output, this->output->state, PW_PORT_STATE_PAUSED);
 	}
+#endif
 
 	pw_link_update_state(this, PW_LINK_STATE_INIT, NULL);
 
@@ -1357,8 +1370,6 @@ struct pw_link *pw_link_new(struct pw_core *core,
 
 	pw_node_emit_peer_added(output_node, input_node);
 
-	pw_core_recalc_graph(core);
-
 	return this;
 
 error_same_ports:
@@ -1504,8 +1515,6 @@ void pw_link_destroy(struct pw_link *link)
 	pw_work_queue_destroy(impl->work);
 
 	pw_properties_free(link->properties);
-
-	pw_core_recalc_graph(link->core);
 
 	free(link->info.format);
 	free(impl);

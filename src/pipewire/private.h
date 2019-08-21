@@ -413,6 +413,7 @@ struct pw_node {
 	struct pw_node *driver_node;
 	struct spa_list slave_list;
 	struct spa_list slave_link;
+	uint32_t active_slaves;
 
 	struct spa_list sort_link;	/**< link used to sort nodes */
 
@@ -606,8 +607,10 @@ struct pw_link {
 
 	void *user_data;
 
-	unsigned int registered:1;
 	unsigned int feedback:1;
+	unsigned int registered:1;
+	unsigned int prepared:1;
+	unsigned int activated:1;
 };
 
 #define pw_resource_emit(o,m,v,...) spa_hook_list_call(&o->listener_list, struct pw_resource_events, m, v, ##__VA_ARGS__)

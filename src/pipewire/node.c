@@ -198,9 +198,11 @@ static int start_node(struct pw_node *this)
 			this->n_used_output_links, this->n_ready_input_links,
 			this->n_used_input_links);
 
+#if 0
 	if (this->n_ready_output_links != this->n_used_output_links ||
 	    this->n_ready_input_links != this->n_used_input_links)
 		return 0;
+#endif
 
 	res = spa_node_send_command(this->node,
 				    &SPA_NODE_COMMAND_INIT(SPA_NODE_COMMAND_Start));
@@ -1297,8 +1299,6 @@ void pw_node_destroy(struct pw_node *node)
 		pw_global_destroy(node->global);
 	}
 
-	pw_core_recalc_graph(node->core);
-
 	pw_log_debug(NAME" %p: free", node);
 	pw_node_emit_free(node);
 
@@ -1493,9 +1493,10 @@ static void on_state_complete(void *obj, void *data, int res, uint32_t seq)
 
 static void node_activate(struct pw_node *this)
 {
-	struct pw_port *port;
 
 	pw_log_debug(NAME" %p: activate", this);
+#if 0
+	struct pw_port *port;
 	spa_list_for_each(port, &this->input_ports, link) {
 		struct pw_link *link;
 		spa_list_for_each(link, &port->links, input_link)
@@ -1506,6 +1507,7 @@ static void node_activate(struct pw_node *this)
 		spa_list_for_each(link, &port->links, output_link)
 			pw_link_activate(link);
 	}
+#endif
 }
 
 /** Set the node state
