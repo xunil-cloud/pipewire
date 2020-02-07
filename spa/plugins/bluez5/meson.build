@@ -1,7 +1,8 @@
 
 bluez5_sources = ['plugin.c',
 		  'a2dp-sink.c',
-                  'bluez5-monitor.c']
+		  'a2dp-codecs.c',
+		  'bluez5-monitor.c']
 
 bluez5lib = shared_library('spa-bluez5',
 	bluez5_sources,
