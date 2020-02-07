@@ -75,7 +75,7 @@ struct spa_bt_monitor {
 	struct spa_list transport_list;
 };
 
-struct spa_handle_factory spa_a2dp_sink_factory;
+extern struct spa_handle_factory spa_a2dp_sink_factory;
 
 static void fill_item(struct spa_bt_monitor *this, struct spa_bt_transport *transport,
 		struct spa_pod **result, struct spa_pod_builder *builder)
