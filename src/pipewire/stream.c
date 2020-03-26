@@ -106,6 +106,7 @@ struct stream {
 	struct spa_callbacks callbacks;
 	struct spa_io_buffers *io;
 	struct spa_io_position *position;
+	struct spa_io_rate_match *rate_match;
 
 	uint32_t change_mask_all;
 	struct spa_port_info port_info;
@@ -257,6 +258,8 @@ static inline struct buffer *pop_queue(struct stream *stream, struct queue *queu
 	buffer = &stream->buffers[id];
 	queue->outcount += buffer->this.size;
 	SPA_FLAG_CLEAR(buffer->flags, BUFFER_FLAG_QUEUED);
+
+	pw_log_trace_fp("%d %"PRIi64" %"PRIi64, avail, buffer->this.size, queue->outcount);
 
 	return buffer;
 }
@@ -464,6 +467,12 @@ static int impl_port_set_io(void *object, enum spa_direction direction, uint32_t
 			impl->io = data;
 		else
 			impl->io = NULL;
+		break;
+	case SPA_IO_RateMatch:
+		if (data && size >= sizeof(struct spa_io_rate_match))
+			impl->rate_match = data;
+		else
+			impl->rate_match = NULL;
 		break;
 	default:
 		return -ENOENT;
@@ -700,15 +709,26 @@ static int impl_port_reuse_buffer(void *object, uint32_t port_id, uint32_t buffe
 static inline void copy_position(struct stream *impl, int64_t queued)
 {
 	struct spa_io_position *p = impl->position;
+	struct spa_io_rate_match *r = impl->rate_match;
+	SEQ_WRITE(impl->seq);
 	if (p != NULL) {
-		SEQ_WRITE(impl->seq);
 		impl->time.now = p->clock.nsec;
 		impl->time.rate = p->clock.rate;
 		impl->time.ticks = p->clock.position;
 		impl->time.delay = p->clock.delay;
 		impl->time.queued = queued;
-		SEQ_WRITE(impl->seq);
+		if (r != NULL) {
+			impl->time.ticks -= r->delay;
+			impl->time.queued += r->delay;
+		}
+
+		pw_log_trace_fp(NAME" %p: %d/%d t:%"PRIu64" d:%"PRIi64
+				" q:%"PRIi64" rd:%d %"PRIi64, impl,
+				impl->time.rate.num, impl->time.rate.denom,
+				impl->time.ticks, impl->time.delay, impl->time.queued, r ? r->delay : 0,
+				impl->time.ticks - impl->time.queued);
 	}
+	SEQ_WRITE(impl->seq);
 }
 
 static int impl_node_process_input(void *object)

@@ -717,7 +717,7 @@ static int impl_node_process(void *object)
 	struct spa_io_buffers *outio, *inio;
 	struct buffer *sbuf, *dbuf;
 	struct spa_buffer *sb, *db;
-	uint32_t i, size, in_len, out_len, maxsize, max;
+	uint32_t i, size, in_len, out_len, maxsize, max, queued;
 #ifndef FASTPATH
 	uint32_t pin_len, pout_len;
 #endif
@@ -773,26 +773,27 @@ static int impl_node_process(void *object)
 	else
 		max = maxsize / sizeof(float);
 
-	switch (this->mode) {
-	case MODE_SPLIT:
-		maxsize = SPA_MIN(maxsize, max * sizeof(float));
-		flush_out = flush_in = this->io_rate_match != NULL;
-		break;
-	case MODE_MERGE:
-	default:
-		flush_out = true;
-		break;
-	}
-
 	if (this->io_rate_match) {
 		if (SPA_FLAG_IS_SET(this->io_rate_match->flags, SPA_IO_RATE_MATCH_FLAG_ACTIVE)) {
 			resample_update_rate(&this->resample, this->io_rate_match->rate);
+			flush_out = flush_in = true;
 		} else {
 			resample_update_rate(&this->resample, 1.0);
 		}
 	}
 
-	in_len = (size - inport->offset) / sizeof(float);
+	switch (this->mode) {
+	case MODE_SPLIT:
+		maxsize = SPA_MIN(maxsize, max * sizeof(float));
+		break;
+	case MODE_MERGE:
+	default:
+		flush_out = true;
+		flush_in = false;
+		break;
+	}
+
+	in_len = queued = (size - inport->offset) / sizeof(float);
 	out_len = (maxsize - outport->offset) / sizeof(float);
 
 	src_datas = alloca(sizeof(void*) * this->resample.channels);
@@ -822,14 +823,14 @@ static int impl_node_process(void *object)
 		db->datas[i].chunk->offset = 0;
 	}
 
+	queued -= in_len;
 	inport->offset += in_len * sizeof(float);
 	if (inport->offset >= size || flush_in) {
 		inio->status = SPA_STATUS_NEED_DATA;
-		inport->offset = 0;
+		inport->offset = queued = 0;
 		SPA_FLAG_SET(res, SPA_STATUS_NEED_DATA);
 		spa_log_trace_fp(this->log, NAME " %p: return input buffer", this);
 	}
-
 	outport->offset += out_len * sizeof(float);
 	if (outport->offset > 0 && (outport->offset >= maxsize || flush_out)) {
 		outio->status = SPA_STATUS_HAVE_DATA;
@@ -847,8 +848,17 @@ static int impl_node_process(void *object)
 	}
 
 	if (this->io_rate_match) {
-		this->io_rate_match->delay = resample_delay(&this->resample);
-		this->io_rate_match->size = resample_in_len(&this->resample, max);
+		uint32_t delay, size;
+
+		delay = resample_delay(&this->resample);
+		size = resample_in_len(&this->resample, max);
+
+		this->io_rate_match->delay = delay + queued;
+		this->io_rate_match->size = size;
+		this->io_rate_match->srate = SPA_FRACTION(1, this->resample.i_rate);
+
+		spa_log_trace_fp(this->log, NAME " %p: delay:%u size:%u queued:%d",
+				this, delay, size, queued);
 	}
 	return res;
 }

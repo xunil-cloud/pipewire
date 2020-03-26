@@ -280,7 +280,8 @@ struct spa_io_rate_match {
 	double rate;			/**< rate for resampler */
 #define SPA_IO_RATE_MATCH_FLAG_ACTIVE	(1 << 0)
 	uint32_t flags;			/**< extra flags */
-	uint32_t padding[7];
+	struct spa_fraction srate;	/**< rate for delay/size */
+	uint32_t padding[5];
 };
 
 #ifdef __cplusplus
